@@ -1,0 +1,4128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>서윤준 · 시스템 기획자 포트폴리오</title>
+
+<style>
+/* ============================================================
+   :ROOT 디자인 토큰 — 모든 색·간격·반경·그림자의 단일 출처
+   페이지 안의 모든 색/간격/그림자는 이 블록의 변수만 참조한다.
+   하드코딩된 색이나 픽셀 값이 아래 컴포넌트 규칙에 등장하면
+   유지보수 버그로 간주한다.
+   ============================================================ */
+:root {
+  /* 브랜드 & 액센트 컬러 — 시안 단일 액센트, 그린은 CTA 전용 */
+  --accent-cyan: #66c0f4;
+  --accent-cyan-bright: #b5dffd;
+  --action-green: #5c7e10;
+  --action-green-bright: #a4d007;
+
+  /* 표면 스택 — 페이지에서 카드까지 3단계 네이비 */
+  --surface-page: #171a21;
+  --surface-body: #1b2838;
+  --surface-card: #2a475e;
+  --surface-card-hover: #316282;
+  --surface-hairline: rgba(0, 0, 0, 0.3);
+  --surface-bevel-top: rgba(255, 255, 255, 0.05);
+
+  /* 텍스트 컬러 — 헤드라인은 화이트, 본문은 라이트스틸, 캡션은 단계별 뮤트 */
+  --text-primary: #c7d5e0;
+  --text-headline: #ffffff;
+  --text-muted: #8f98a0;
+  --text-dim: #66727d;
+  --text-tag: #67c1f5;
+
+  /* 간격 시스템 — 4px 기본 단위 */
+  --space-xxs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+  --space-section: 64px;
+
+  /* 보더 반경 스케일 — 0/2/3/4 까지만 사용, 알약 형태 금지 */
+  --rounded-none: 0px;
+  --rounded-xs: 2px;
+  --rounded-sm: 3px;
+  --rounded-md: 4px;
+
+  /* 컴포지트 — 카드 베벨, 시안 글로우, 두 종류의 그라데이션 */
+  --bevel: inset 0 1px 0 0 var(--surface-bevel-top),
+           inset 0 -1px 0 0 var(--surface-hairline);
+  --cyan-ring: 0 0 0 1px var(--accent-cyan),
+               0 0 16px rgba(102, 192, 244, 0.35);
+  --gradient-hero: radial-gradient(ellipse at top,
+                   #2a475e 0%, #1b2838 60%, #171a21 100%);
+  --gradient-cta: linear-gradient(to bottom, #a4d007 5%, #5c7e10 95%);
+  --gradient-cta-hover: linear-gradient(to bottom, #b6e040 5%, #6c9118 95%);
+  --gradient-link-hover: linear-gradient(to right, #67c1f5 5%, #417a9b 95%);
+
+  /* 폰트 스택 — Motiva Sans 우선, 시스템 폴백, 한글 폴백 */
+  --font-stack: "Motiva Sans", -apple-system, BlinkMacSystemFont,
+                "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR",
+                "Malgun Gothic", Arial, sans-serif;
+}
+
+/* ============================================================
+   리셋 & 베이스 — 박스모델/링크/이미지 기본 정리
+   ============================================================ */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* sticky 헤더 높이만큼 앵커 점프 시 스크롤 위치 보정
+     104px(헤더 높이) + 16px(여유) — 모든 앵커 타겟에 자동 적용됨 */
+  scroll-padding-top: 120px;
+}
+
+body {
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-family: var(--font-stack);
+  font-size: 14px;
+  line-height: 1.55;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums;
+  min-height: 100vh;
+}
+
+a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+  transition: color 200ms ease;
+}
+
+a:hover {
+  color: var(--accent-cyan-bright);
+}
+
+img,
+svg {
+  max-width: 100%;
+  display: block;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+/* ============================================================
+   TOP HEADER — 페이지 최상단 네비게이션 밴드 (sticky 적용)
+   1200px 컨테이너 안에 좌측 포트폴리오 명, 우측 섹션 링크 배치
+   - 데스크톱: 페이지 어디로 스크롤해도 항상 상단에 고정
+   - 모바일: 모바일 반응형 블록에서 position 을 다시 풀어 일반 헤더로 복귀
+     (모바일은 헤더가 세로로 펼쳐져 가용 화면을 너무 차지하므로)
+   - z-index 100 — 라이트박스(9999) 와 doc-viewer(9999) 보다 낮게 두어
+     오버레이가 열렸을 때는 헤더가 가려지는 게 정상
+   ============================================================ */
+.top-header {
+  background: var(--surface-page);
+  width: 100%;
+  border-bottom: 1px solid var(--surface-hairline);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.top-header__container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  height: 104px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.top-header__brand {
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--text-headline);
+  letter-spacing: 0;
+}
+
+.top-header__brand-accent {
+  /* 포트폴리오 이름 안의 시안 강조 부분 */
+  color: var(--accent-cyan);
+}
+
+.top-header__nav {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.top-header__nav-link {
+  color: var(--text-primary);
+  font-size: 14px;
+  padding-bottom: 4px;
+  border-bottom: 2px solid transparent;
+  transition: color 200ms ease, border-color 200ms ease;
+}
+
+.top-header__nav-link:hover {
+  color: var(--accent-cyan);
+}
+
+/* 현재 섹션 활성 상태 — 시안 컬러 + 시안 하단 보더 */
+.top-header__nav-link.is-active {
+  color: var(--accent-cyan);
+  border-bottom-color: var(--accent-cyan);
+}
+
+/* ============================================================
+   HERO BAND — 페이지 최상단 영웅 영역
+   배경에 라디얼 비네트, 좌측 캡슐(7컬럼), 우측 타이틀+사이드바(5컬럼)
+   ============================================================ */
+.hero-band {
+  background: var(--gradient-hero);
+  width: 100%;
+  padding: var(--space-xl) 0 var(--space-lg);
+}
+
+.hero-band__container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: var(--space-md);
+}
+
+/* 히어로 캡슐 박스 — 16:9 비율 (프로젝트 캡슐과 동일), 캐러셀 컨테이너 역할 */
+.hero-band__capsule {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--rounded-none);
+  background: var(--surface-card);
+  box-shadow: var(--bevel);
+  overflow: hidden;
+  position: relative;
+}
+
+.hero-band__capsule svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ============================================================
+   HERO CAROUSEL — 프로젝트 키비주얼 자동 순환 슬라이더
+   - JS 가 페이지의 모든 .project-panel 에서 캡슐 SVG 를 복제해 슬라이드로 자동 생성
+   - 새 프로젝트가 추가되면 패널만 추가해도 캐러셀에 자동 반영 (확장성)
+   - 4초마다 좌→우 슬라이드 (transform: translateX)
+   - 호버 시 멈추지 않음 (사용자 결정)
+   - 슬라이드 클릭 시 해당 프로젝트 탭으로 이동 (data-target 으로 패널 ID 전달)
+   ============================================================ */
+.hero-carousel {
+  /* 캐러셀 외곽 — hero-band__capsule 의 자식으로 들어가 박스 가득 채움
+     pointer cursor 로 클릭 가능 인상 부여 */
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.hero-carousel__track {
+  /* 슬라이드 트랙 — 슬라이드 N개를 가로로 배치, JS 가 transform 으로 이동
+     500ms ease 트랜지션으로 부드러운 슬라이드 전환 */
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 500ms ease;
+}
+
+.hero-carousel__slide {
+  /* 개별 슬라이드 — 캐러셀 폭 100% 차지, flex-shrink: 0 로 트랙 안에서 줄어들지 않음 */
+  width: 100%;
+  height: 100%;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.hero-carousel__slide svg {
+  /* 슬라이드 안 SVG — 박스 가득 채움 (940:529 = 16:9 그대로 fit) */
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ============================================================
+   TITLE BLOCK — 히어로 우측 타이틀+메타 클러스터
+   타이틀(39px Regular) → 부제 한 줄 → CTA 버튼 → 메타 사이드바
+   ============================================================ */
+.title-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.title-block__title {
+  font-size: 39px;
+  font-weight: 400;
+  line-height: 1.20;
+  letter-spacing: -0.005em;
+  color: var(--text-headline);
+}
+
+.title-block__subtitle {
+  /* 장르·역할·연도 한 줄 — 플레인 텍스트, 가운뎃점 구분 */
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.title-block__cta-row {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  margin-top: var(--space-xs);
+}
+
+/* ============================================================
+   METADATA SIDEBAR — 메타정보 2컬럼 라벨/값 리스트
+   라벨 30%, 값 70% — 값은 시안 컬러로 클릭 가능 인상
+   ============================================================ */
+.metadata-sidebar {
+  background: var(--surface-card);
+  box-shadow: var(--bevel);
+  border-radius: var(--rounded-sm);
+  padding: var(--space-sm);
+}
+
+.metadata-sidebar__row {
+  display: grid;
+  grid-template-columns: 30% 70%;
+  gap: var(--space-xs);
+  padding: 6px 0;
+}
+
+.metadata-sidebar__label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.metadata-sidebar__value {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--accent-cyan);
+  line-height: 1.4;
+}
+
+/* 메타 값 안에서 단순 텍스트로 표기할 때 — 시안이 아닌 라이트스틸 */
+.metadata-sidebar__value--plain {
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   CTA BUTTON — 단일 메인 액션, 그린 그라데이션 채움
+   페이지당 1개만 사용
+   ============================================================ */
+.cta-button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-cta);
+  color: var(--text-headline);
+  font-size: 15px;
+  font-weight: 400;
+  padding: 8px var(--space-md);
+  border-radius: var(--rounded-sm);
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+  transition: background 200ms ease;
+}
+
+.cta-button-primary:hover {
+  background: var(--gradient-cta-hover);
+  color: var(--text-headline);
+}
+
+.cta-button-primary:active {
+  background: var(--action-green);
+}
+
+/* ============================================================
+   CTA BUTTON SECONDARY — 인라인 시안 링크 (화살표 동반)
+   페이지에 여러 개 가능, 글로우 없음
+   ============================================================ */
+.cta-button-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent-cyan);
+  font-size: 14px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 200ms ease;
+}
+
+.cta-button-secondary:hover {
+  color: var(--accent-cyan-bright);
+}
+
+/* ============================================================
+   CONTENT COLUMN — 940px 본문 컬럼 래퍼
+   히어로 아래의 모든 본문 섹션을 감싸는 단일 그리드 컨테이너
+   ============================================================ */
+.content-column {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+}
+
+/* ============================================================
+   SECTION — 본문 섹션 공통 래퍼 + 섹션 헤더
+   섹션 사이 간격은 64px, 섹션 헤더는 22px Regular + 시안 right link
+   ============================================================ */
+.section {
+  padding: var(--space-section) 0 0 0;
+}
+
+.section--first {
+  /* 첫 섹션 — 히어로 바로 아래라 위 패딩만 약간 줄임 */
+  padding-top: var(--space-xl);
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--surface-hairline);
+  margin-bottom: var(--space-lg);
+}
+
+.section-header__title {
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--text-headline);
+  line-height: 1.30;
+}
+
+/* ============================================================
+   SUBSECTION LABEL — 작은 대문자 트랙된 라벨
+   태그 클러스터·기능 리스트 위에 붙는 작은 헤더
+   ============================================================ */
+.subsection-label {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-bottom: var(--space-sm);
+}
+
+/* ============================================================
+   PROJECT TABS — 프로젝트 전환 탭 (안 A 채택)
+   톱 헤더 nav 와 동일한 패턴 — 텍스트 + 시안 하단 보더
+   ARIA tablist/tab/tabpanel 패턴을 따라 키보드 네비게이션 지원
+   ============================================================ */
+.project-tabs {
+  /* 탭 컨테이너 — 하단 헤어라인이 비활성 탭들의 베이스라인 역할 */
+  display: flex;
+  gap: var(--space-lg);
+  border-bottom: 1px solid var(--surface-hairline);
+  margin-bottom: var(--space-lg);
+}
+
+.project-tabs__button {
+  /* 개별 탭 버튼 — 톱 헤더 nav 링크와 시각적으로 동일 */
+  background: none;
+  border: none;
+  padding: var(--space-sm) 0;
+  margin-bottom: -1px;
+  /* 컨테이너 하단 1px 보더와 활성 탭의 2px 보더가 겹치도록 -1px 마진 */
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-primary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 200ms ease, border-color 200ms ease;
+}
+
+.project-tabs__button:hover {
+  color: var(--accent-cyan);
+}
+
+.project-tabs__button:focus-visible {
+  outline: none;
+  color: var(--accent-cyan);
+}
+
+.project-tabs__button.is-active {
+  /* 활성 상태 — 시안 컬러 + 시안 2px 하단 보더 */
+  color: var(--accent-cyan);
+  border-bottom-color: var(--accent-cyan);
+}
+
+/* ============================================================
+   PROJECT PANEL — 탭으로 전환되는 개별 프로젝트 본문 패널
+   기본 숨김, .is-active 일 때만 표시. 200ms 페이드인.
+   ============================================================ */
+.project-panel {
+  display: none;
+}
+
+.project-panel.is-active {
+  display: block;
+  animation: project-panel-fade-in 200ms ease;
+}
+
+/* 패널 페이드인 키프레임 — 라이트박스와 같은 200ms ease 톤 */
+@keyframes project-panel-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================================
+   DESCRIPTION BLOCK — 설명 본문 영역
+   첫 단락은 16px lead, 이후 단락은 14px body
+   ============================================================ */
+.description-block__lead {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.50;
+  color: var(--text-primary);
+  margin-bottom: var(--space-md);
+}
+
+.description-block__paragraph {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--text-primary);
+  margin-bottom: var(--space-md);
+}
+
+.description-block__paragraph:last-child {
+  margin-bottom: 0;
+}
+
+/* 인라인 키워드 강조 — 볼드 대신 시안 컬러 사용 */
+.kw {
+  color: var(--accent-cyan);
+}
+
+/* ============================================================
+   STAT ROW — 큰 숫자 + 작은 라벨의 가로 4셀
+   설명 블록 아래에서 핵심 수치를 강조할 때 사용
+   ============================================================ */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-xl);
+  padding: var(--space-lg) 0;
+}
+
+.stat-row__cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+}
+
+.stat-row__value {
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--text-headline);
+  line-height: 1.30;
+}
+
+.stat-row__label {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ============================================================
+   SKILL RATING — 셀프 평점 시스템 (별점 + 5단계 라벨)
+   - 5단계: 전문 / 숙련 / 활용 / 사용 / 학습
+   - 별점 5개로 시각화, 채워진 별 색이 등급 따라 변함
+   - 두 가지 레이아웃: 3열 그리드 (Core Skills) / 카테고리 컬럼 (Software)
+   ============================================================ */
+
+/* --- 공통: 카드 본체 --- */
+.skill-rating-item {
+  /* 카드 — 카드 표면 + 베벨 + 내부는 상단(이름) / 하단(별+라벨) 2행 */
+  background: var(--surface-card);
+  box-shadow: var(--bevel);
+  border-radius: var(--rounded-sm);
+  padding: var(--space-sm) var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: background 200ms ease;
+}
+
+/* 호버 — 정보 표시용 카드라 글로우 없이 배경만 한 단계 밝아짐 (tag-pill 패턴)
+   클릭 가능 카드(capsule-card / viewer-trigger)와 호버 위계를 구분 */
+.skill-rating-item:hover {
+  background: var(--surface-card-hover);
+}
+
+.skill-rating-item__name {
+  /* 스킬/툴 이름 — 흰색, 본문 사이즈 살짝 아래 */
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-headline);
+  line-height: 1.3;
+}
+
+.skill-rating-item__bottom {
+  /* 별점 + 라벨 한 행 — 좌측 별, 우측 라벨 텍스트 */
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.skill-rating-item__note {
+  /* 등급 근거/설명 — 카드 가장 아래 1~2줄 캡션
+     11px text-muted 로 약하게 두어 별점/라벨이 시각 위계에서 우선되도록 함
+     줄바꿈 자연스럽게, 너무 길면 2줄 후 ellipsis */
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-top: 2px;
+  /* 2줄까지 허용 후 말줄임 — 카드 정렬 일관성 유지 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* --- 별점 컴포넌트 --- */
+.skill-rating-item__stars {
+  /* 별 5개 가로 배치 컨테이너 */
+  display: inline-flex;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.skill-rating-item__star {
+  /* 개별 별 SVG — 12x12, 채워진 별은 currentColor 로 부모 색 따라감
+     빈 별은 .skill-rating-item__star--empty 로 별도 색 처리 */
+  width: 12px;
+  height: 12px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.skill-rating-item__star--empty {
+  /* 빈 별 — 항상 어두운 회색, 어떤 등급이든 동일 */
+  color: var(--text-dim);
+  opacity: 0.5;
+}
+
+/* 별 컬러 위계 — 채워진 별의 색이 등급에 따라 달라짐 */
+.skill-rating-item__stars--expert {
+  color: var(--accent-cyan-bright);
+}
+.skill-rating-item__stars--adept {
+  color: var(--accent-cyan);
+}
+.skill-rating-item__stars--applied {
+  color: var(--accent-cyan);
+}
+.skill-rating-item__stars--using {
+  color: var(--text-primary);
+}
+.skill-rating-item__stars--learning {
+  color: var(--text-muted);
+}
+
+/* --- 라벨 텍스트 --- */
+.skill-rating-item__rating {
+  /* 등급 라벨 — 12px, 색상으로 등급 차이 표현 */
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+/* 5단계 라벨 컬러 modifier */
+.skill-rating-item__rating--expert {
+  /* 전문 — 가장 밝은 시안 + Bold (자기 평가 최상위만 Bold) */
+  color: var(--accent-cyan-bright);
+  font-weight: 700;
+}
+.skill-rating-item__rating--adept {
+  /* 숙련 — 표준 시안 */
+  color: var(--accent-cyan);
+}
+.skill-rating-item__rating--applied {
+  /* 활용 — 표준 시안 (숙련보다 별 1개 적음으로만 구분) */
+  color: var(--accent-cyan);
+}
+.skill-rating-item__rating--using {
+  /* 사용 — 라이트 스틸 */
+  color: var(--text-primary);
+}
+.skill-rating-item__rating--learning {
+  /* 학습 — 뮤트 */
+  color: var(--text-muted);
+}
+
+/* --- 레이아웃 1: 단일 카테고리 3열 그리드 (Core Skills 용) --- */
+.skill-rating-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+}
+
+/* --- 레이아웃 2: 카테고리 컬럼 분리 (Software 용) ---
+   3열로 카테고리를 가로 분할, 각 컬럼 안에서 항목들이 세로로 쌓임
+   align-items: start 로 컬럼 높이 차이를 그대로 두고 각 자기 콘텐츠만큼만 차지 */
+.skill-rating-columns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+  align-items: start;
+  margin-bottom: var(--space-lg);
+}
+
+.skill-rating-column {
+  /* 한 카테고리 컬럼 — 헤더 + 그 아래 카드 스택 */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.skill-rating-column__header {
+  /* 컬럼 상단 카테고리 헤더 — 시안 영문 트랙 대문자 + 시안 헤어라인 */
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xxs);
+}
+
+.skill-rating-column__label {
+  /* 카테고리 영문 라벨 (예: ENGINE) — 시안 강조 */
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-cyan);
+  flex-shrink: 0;
+}
+
+.skill-rating-column__line {
+  /* 라벨 우측의 시안 헤어라인 — 컬럼 폭만큼 늘어남 */
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--accent-cyan);
+  opacity: 0.3;
+}
+
+/* ============================================================
+   PROJECT SHOWCASE — 프로젝트 한 건 단위의 쇼케이스 블록
+   각 프로젝트 = 캡슐 + 설명 + 스크린샷 스트립 + 태그 + 시스템정보
+   ============================================================ */
+.project-showcase {
+  margin-bottom: var(--space-section);
+}
+
+.project-showcase:last-child {
+  margin-bottom: 0;
+}
+
+.project-showcase__hero {
+  /* 프로젝트 단위 캡슐 이미지 — 본문 컬럼 풀 와이드, 16:9 */
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--surface-card);
+  box-shadow: var(--bevel);
+  border-radius: var(--rounded-none);
+  overflow: hidden;
+  margin-bottom: var(--space-lg);
+}
+
+.project-showcase__hero svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.project-showcase__title {
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--text-headline);
+  line-height: 1.30;
+  margin-bottom: var(--space-xxs);
+}
+
+.project-showcase__meta {
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: var(--space-md);
+}
+
+/* ============================================================
+   THUMBNAIL STRIP — 스크린샷 4-up 그리드
+   각 썸네일은 16:9, 라운딩 없음, 호버 시 시안 링
+   ============================================================ */
+.thumbnail-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-xs);
+  margin: var(--space-md) 0;
+}
+
+.thumbnail-frame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--surface-card);
+  border-radius: var(--rounded-none);
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 200ms ease;
+  position: relative;
+}
+
+.thumbnail-frame:hover,
+.thumbnail-frame:focus-visible {
+  /* 시스템의 유일한 글로우 — 호버/포커스 시에만 적용 */
+  box-shadow: var(--cyan-ring);
+  outline: none;
+}
+
+.thumbnail-frame svg,
+.thumbnail-frame img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+/* ============================================================
+   TAG CLUSTER — 작은 태그 알약들의 줄바꿈 클러스터
+   8px 간격으로 6~24개 자유 배치
+   ============================================================ */
+.tag-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface-card);
+  color: var(--text-tag);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.20;
+  padding: 4px 10px;
+  border-radius: var(--rounded-xs);
+  box-shadow: var(--bevel);
+  cursor: default;
+  transition: background 200ms ease, color 200ms ease;
+}
+
+.tag-pill:hover {
+  background: var(--surface-card-hover);
+  color: var(--accent-cyan-bright);
+}
+
+/* ============================================================
+   SYSTEM INFO TABLE — 라벨/값 2컬럼 키밸류 표
+   라벨 30%, 값 70%, 행 하단 1px 헤어라인
+   ============================================================ */
+.system-info-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.system-info-table__row {
+  display: grid;
+  grid-template-columns: 30% 70%;
+  gap: var(--space-md);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--surface-hairline);
+}
+
+.system-info-table__row:last-child {
+  border-bottom: none;
+}
+
+.system-info-table__label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.system-info-table__value {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+/* ============================================================
+   CAPSULE CARD — "More like this" 그리드 카드
+   메인 캡슐 이미지(467x181 비율) + 타이틀 + 부제
+   ============================================================ */
+.more-like-this-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-md);
+}
+
+.capsule-card {
+  background: var(--surface-card);
+  border-radius: var(--rounded-sm);
+  box-shadow: var(--bevel);
+  overflow: hidden;
+  cursor: pointer;
+  transition: background 200ms ease, box-shadow 200ms ease;
+}
+
+.capsule-card:hover,
+.capsule-card:focus-visible {
+  background: var(--surface-card-hover);
+  box-shadow: var(--cyan-ring);
+  outline: none;
+}
+
+.capsule-card__art {
+  /* 카드 안 캡슐 이미지 자체는 라운딩 없음 — 카드 프레임만 라운딩 */
+  width: 100%;
+  aspect-ratio: 467 / 181;
+  background: var(--surface-body);
+  border-radius: var(--rounded-none);
+  overflow: hidden;
+}
+
+.capsule-card__art svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.capsule-card__body {
+  padding: var(--space-sm);
+}
+
+.capsule-card__title {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-headline);
+  line-height: 1.40;
+  margin-bottom: 2px;
+}
+
+.capsule-card__subtitle {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.40;
+}
+
+/* ============================================================
+   FOOTER BAND — 페이지 하단 밴드
+   페이지 색으로 한 단계 더 어두워지고, 좌측 연락처/우측 카피라이트
+   ============================================================ */
+.footer-band {
+  background: var(--surface-page);
+  margin-top: var(--space-section);
+  padding: var(--space-lg) 0;
+  border-top: 1px solid var(--surface-hairline);
+}
+
+.footer-band__container {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.footer-band__contact {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+}
+
+.footer-band__copyright {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-dim);
+  line-height: 1.40;
+}
+
+/* ============================================================
+   BODY WRAPPER — 본문 영역의 베이스 컬러 처리
+   히어로 아래부터 푸터 직전까지를 감싸 mid-navy 컬러로 채움
+   ============================================================ */
+.body-wrapper {
+  background: var(--surface-body);
+}
+
+/* ============================================================
+   DOC LINK ROW — 프로젝트별 기획 문서 열람 링크 클러스터
+   설명 본문 직후 배치, 시안 secondary 링크 형태로 다중 표시
+   각 링크는 새 창에서 PDF/Notion 페이지를 열도록 설계
+   ============================================================ */
+.doc-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  align-items: center;
+  padding: var(--space-md) 0;
+  margin-bottom: var(--space-md);
+  border-top: 1px solid var(--surface-hairline);
+  border-bottom: 1px solid var(--surface-hairline);
+}
+
+.doc-link-row__label {
+  /* 좌측 작은 라벨 — "기획 문서:" */
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-right: var(--space-xs);
+}
+
+.doc-link-row__link {
+  /* 시안 secondary 링크 — 화살표 동반 */
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent-cyan);
+  font-size: 13px;
+  text-decoration: none;
+  transition: color 200ms ease;
+}
+
+.doc-link-row__link:hover {
+  color: var(--accent-cyan-bright);
+}
+
+/* 문서 아이콘 (인라인 SVG) — 링크 텍스트 좌측 작은 마크 */
+.doc-link-row__icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+/* ============================================================
+   LIGHTBOX — 썸네일/캡슐 클릭 시 확대 오버레이
+   시스템 명세의 Known Gaps 가이드를 따름 — surface-card 배경,
+   기본 베벨, 4px(rounded-md) 라디우스. 새 토큰은 만들지 않음.
+   기본 상태는 display: none, .is-open 클래스로 표시 토글
+   ============================================================ */
+.lightbox {
+  /* 최상위 오버레이 — 페이지 전체를 덮음 */
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  background: rgba(23, 26, 33, 0.92);
+  /* surface-page 의 92% 불투명 — 새 색을 만들지 않고 기존 페이지 컬러 유틸로 처리 */
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+  cursor: zoom-out;
+  /* 페이드인 — 200ms ease 시스템 표준 */
+  animation: lightbox-fade-in 200ms ease;
+}
+
+/* 활성화 상태 — JS에서 .is-open 클래스 부여 시 표시 */
+.lightbox.is-open {
+  display: flex;
+}
+
+/* 페이드인 키프레임 — 시스템 유일한 애니메이션 (200ms ease) */
+@keyframes lightbox-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.lightbox__inner {
+  /* 확대 콘텐츠 박스 — 본문 컬럼 폭(940px)에 맞추고, 비율은 JS가 동적 설정
+     - width 940px 을 기본값으로 하되 뷰포트가 더 좁으면 95vw 까지 축소
+     - aspect-ratio 는 JS 가 클릭된 SVG 의 viewBox 에서 읽어 인라인으로 부여
+     - max-height: 90vh 로 세로가 작은 화면에서도 화면을 넘지 않도록 제한 */
+  position: relative;
+  width: min(940px, 95vw);
+  max-height: 90vh;
+  background: var(--surface-card);
+  box-shadow: var(--bevel);
+  border-radius: var(--rounded-md);
+  overflow: hidden;
+  cursor: default;
+  /* 클릭 이벤트 버블 차단 — JS에서 stopPropagation 으로 처리 */
+}
+
+.lightbox__media {
+  /* 확대 이미지/SVG 영역 — 컨테이너의 비율을 그대로 따라감
+     컨테이너에 aspect-ratio 가 설정되어 있으므로 자식은 100% 채움 */
+  width: 100%;
+  flex: 1 1 auto;
+  display: block;
+  background: var(--surface-body);
+  overflow: hidden;
+}
+
+.lightbox__media svg,
+.lightbox__media img {
+  /* 비율 100% 고정 — 컨테이너가 이미 viewBox 비율로 잡혀 있으므로
+     이미지/SVG는 단순히 100% 채우면 됨. object-fit 은 안전장치. */
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+/* inner 박스 안에서 미디어 + 캡션이 세로 스택을 이루도록 flex 컨테이너로 변경 */
+.lightbox__inner {
+  display: flex;
+  flex-direction: column;
+}
+
+.lightbox__caption {
+  /* 하단 캡션 — 어떤 이미지인지 텍스트로 표시 */
+  padding: var(--space-sm) var(--space-md);
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--surface-card);
+  border-top: 1px solid var(--surface-hairline);
+}
+
+.lightbox__close {
+  /* 우상단 닫기 버튼 — 시안 액센트 원형 (글로우 없음) */
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-page);
+  color: var(--accent-cyan);
+  border: 1px solid var(--accent-cyan);
+  border-radius: var(--rounded-md);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1;
+  padding: 0;
+  transition: background 200ms ease, color 200ms ease;
+  z-index: 1;
+}
+
+.lightbox__close:hover {
+  background: var(--accent-cyan);
+  color: var(--surface-page);
+}
+
+.lightbox__close:focus-visible {
+  outline: none;
+  box-shadow: var(--cyan-ring);
+}
+
+/* 라이트박스 열림 시 body 스크롤 잠금 */
+body.is-lightbox-open {
+  overflow: hidden;
+}
+
+/* ============================================================
+   VIEWER TRIGGER ROW — 프로젝트 본문 안의 3-버튼 진입점
+   [기획서 열람] [플레이 영상] [스크린샷] 버튼이 가로로 배치
+   각 버튼은 cyan secondary CTA 와 비슷한 톤 + 좌측 아이콘
+   ============================================================ */
+.viewer-trigger-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin: var(--space-lg) 0;
+  padding: var(--space-md) 0;
+  border-top: 1px solid var(--surface-hairline);
+  border-bottom: 1px solid var(--surface-hairline);
+}
+
+.viewer-trigger {
+  /* 트리거 버튼 — 카드형 톤이지만 글로우는 hover 시에만 (시스템 룰 준수) */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  padding: var(--space-xs) var(--space-md);
+  border: none;
+  border-radius: var(--rounded-sm);
+  box-shadow: var(--bevel);
+  cursor: pointer;
+  transition: background 200ms ease, color 200ms ease, box-shadow 200ms ease;
+  flex: 1 1 0;
+  min-width: 140px;
+  justify-content: center;
+}
+
+.viewer-trigger:hover {
+  background: var(--surface-card-hover);
+  color: var(--accent-cyan-bright);
+  box-shadow: var(--cyan-ring);
+}
+
+.viewer-trigger:focus-visible {
+  outline: none;
+  background: var(--surface-card-hover);
+  color: var(--accent-cyan-bright);
+  box-shadow: var(--cyan-ring);
+}
+
+.viewer-trigger__icon {
+  /* 좌측 아이콘 — 12px 시안, currentColor 로 텍스트 색에 동기화 */
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--accent-cyan);
+  transition: color 200ms ease;
+}
+
+.viewer-trigger:hover .viewer-trigger__icon,
+.viewer-trigger:focus-visible .viewer-trigger__icon {
+  color: var(--accent-cyan-bright);
+}
+
+/* ============================================================
+   DOC VIEWER — 자료 열람 오버레이 (기획서/영상/스크린샷 공용)
+   본문 폭 940px, 메인 영역 + 하단 항목 목록의 2단 구조
+   라이트박스와 동일한 닫기 패턴: 외부 클릭 / X 버튼 / ESC 키
+   ============================================================ */
+.doc-viewer {
+  /* 최상위 오버레이 — 라이트박스와 같은 차폐 색 사용 */
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  background: rgba(23, 26, 33, 0.92);
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+  cursor: zoom-out;
+  animation: doc-viewer-fade-in 200ms ease;
+}
+
+.doc-viewer.is-open {
+  display: flex;
+}
+
+@keyframes doc-viewer-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.doc-viewer__inner {
+  /* 본문 폭 940px 박스 — 메인 + 푸터 + 닫기버튼이 들어감
+     기본 동작: 콘텐츠 높이만큼만 차지하되 90vh 를 상한으로 둠 */
+  position: relative;
+  width: min(940px, 95vw);
+  max-height: 90vh;
+  background: var(--surface-card);
+  box-shadow: var(--bevel);
+  border-radius: var(--rounded-md);
+  overflow: hidden;
+  cursor: default;
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-viewer__inner--pdf {
+  /* PDF 모드 — 박스를 90vh 풀 높이로 강제해서 한 페이지가 화면 가득 차게
+     JS 가 PDF 모드 진입 시 .doc-viewer__inner--pdf 클래스를 토글한다 */
+  height: 90vh;
+}
+
+.doc-viewer__header {
+  /* 상단 헤더 — 타이틀 + 우측 닫기 영역 */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--surface-hairline);
+  background: var(--surface-card);
+  flex-shrink: 0;
+}
+
+.doc-viewer__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-headline);
+  line-height: 1.4;
+}
+
+.doc-viewer__title-meta {
+  /* 타이틀 우측의 작은 캡션 — "1 / 4" 같은 인덱스 */
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: var(--space-xs);
+}
+
+.doc-viewer__close {
+  /* 라이트박스와 동일한 디자인의 닫기 버튼 */
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-page);
+  color: var(--accent-cyan);
+  border: 1px solid var(--accent-cyan);
+  border-radius: var(--rounded-md);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1;
+  padding: 0;
+  transition: background 200ms ease, color 200ms ease;
+  flex-shrink: 0;
+}
+
+.doc-viewer__close:hover {
+  background: var(--accent-cyan);
+  color: var(--surface-page);
+}
+
+.doc-viewer__close:focus-visible {
+  outline: none;
+  box-shadow: var(--cyan-ring);
+}
+
+.doc-viewer__main {
+  /* 메인 영역 — PDF iframe / YouTube iframe / 큰 이미지 */
+  flex: 1 1 auto;
+  background: var(--surface-body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  min-height: 0;
+  /* min-height:0 — flex 자식의 overflow 정상 동작용 */
+}
+
+/* 메인 영역 안에 들어가는 iframe / 이미지 / SVG 모두 부모 채움 */
+.doc-viewer__main iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  background: var(--surface-body);
+}
+
+.doc-viewer__main svg,
+.doc-viewer__main img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* 메인 영역에 PDF/영상이 들어갈 때는 타입별 표시 정책 */
+.doc-viewer__main--pdf {
+  /* PDF 는 viewer 박스 안의 남는 세로 공간을 모두 차지 — 한 페이지가 가득 차게
+     - aspect-ratio 강제 해제: A4 페이지 비율은 PDF 자체가 가지고 있으므로 컨테이너는 굳이 비율 강제할 필요 없음
+     - flex 자식이라 flex: 1 + min-height: 0 만으로 부모(.doc-viewer__inner)의 남는 공간을 자동 채움
+     - 결과: 헤더/목록을 뺀 나머지가 모두 PDF 영역 → 일반 A4 한 페이지가 거의 화면 가득
+     - 데스크톱 브라우저 내장 PDF 뷰어가 마우스 휠 스크롤로 자연스럽게 페이지 넘김 처리 */
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.doc-viewer__main--video {
+  /* 영상은 16:9 고정 */
+  aspect-ratio: 16 / 9;
+}
+
+.doc-viewer__main--image {
+  /* 이미지는 자체 비율 (JS 가 동적 부여) */
+}
+
+.doc-viewer__main-fallback {
+  /* PDF/영상이 임베드 안 될 때의 폴백 — 새 창 열기 안내 */
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.doc-viewer__main-fallback a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.doc-viewer__main-fallback a:hover {
+  color: var(--accent-cyan-bright);
+}
+
+.doc-viewer__list {
+  /* 하단 항목 목록 — 가로 스크롤 가능한 썸네일 리스트 */
+  display: flex;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-card);
+  border-top: 1px solid var(--surface-hairline);
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+
+.doc-viewer__list-item {
+  /* 개별 항목 버튼 — 썸네일 + 라벨 */
+  flex-shrink: 0;
+  background: var(--surface-body);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 400;
+  border: none;
+  border-radius: var(--rounded-sm);
+  box-shadow: var(--bevel);
+  cursor: pointer;
+  padding: var(--space-xxs);
+  transition: background 200ms ease, box-shadow 200ms ease;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 140px;
+  text-align: left;
+}
+
+.doc-viewer__list-item:hover {
+  background: var(--surface-card-hover);
+  box-shadow: var(--cyan-ring);
+}
+
+.doc-viewer__list-item:focus-visible {
+  outline: none;
+  box-shadow: var(--cyan-ring);
+}
+
+.doc-viewer__list-item.is-active {
+  /* 현재 메인 영역에 표시 중인 항목 — 시안 보더 (글로우는 hover 만) */
+  box-shadow: var(--bevel),
+              inset 0 0 0 1px var(--accent-cyan);
+}
+
+.doc-viewer__list-thumb {
+  /* 항목 썸네일 — 16:9 작은 미리보기 */
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--surface-card);
+  border-radius: var(--rounded-xs);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.doc-viewer__list-thumb svg,
+.doc-viewer__list-thumb img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+/* PDF/영상 항목은 텍스트 위주 썸네일 — 아이콘 + 타이틀만 */
+.doc-viewer__list-thumb--icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-cyan);
+  font-size: 24px;
+}
+
+.doc-viewer__list-label {
+  font-size: 11px;
+  color: var(--text-primary);
+  line-height: 1.3;
+  padding: 2px 4px;
+  /* 2줄까지 허용 후 말줄임 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* doc-viewer 열림 시 body 스크롤 잠금 (라이트박스와 같은 클래스 재사용 가능 — 여기는 별도 클래스로 명시) */
+body.is-doc-viewer-open {
+  overflow: hidden;
+}
+
+/* ============================================================
+   RESPONSIVE — 768px 이하 모바일 대응
+   히어로 사이드바 → 캡슐 아래로, 4-up 그리드 → 2-up
+   ============================================================ */
+@media (max-width: 1024px) {
+  .hero-band__container {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  /* 모바일 — sticky 헤더 해제 (가용 화면 보호)
+     데스크톱은 sticky 유지, 모바일은 일반 헤더로 동작 */
+  html {
+    scroll-padding-top: 16px;
+    /* 모바일은 헤더가 sticky 가 아니므로 scroll-padding 도 줄임 */
+  }
+  .top-header {
+    position: static;
+  }
+
+  /* 톱 헤더 — 네비게이션 줄바꿈 가능하도록 */
+  .top-header__container {
+    height: auto;
+    padding: var(--space-md);
+    flex-direction: column;
+    gap: var(--space-sm);
+    align-items: flex-start;
+  }
+
+  .top-header__nav {
+    flex-wrap: wrap;
+    gap: var(--space-md);
+  }
+
+  /* 히어로 — 타이틀 폰트 사이즈 축소 */
+  .title-block__title {
+    font-size: 28px;
+  }
+
+  /* 4-up 그리드 → 2-up */
+  .thumbnail-strip,
+  .more-like-this-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* 스탯 로우도 2x2로 */
+  .stat-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+  }
+
+  /* 푸터 — 세로 정렬로 */
+  .footer-band__container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+
+  /* 섹션 간격 축소 */
+  .section {
+    padding-top: var(--space-xl);
+  }
+
+  /* 라이트박스 — 모바일에서 패딩 축소, 닫기 버튼 약간 작게 */
+  .lightbox {
+    padding: var(--space-sm);
+  }
+
+  .lightbox__close {
+    width: 36px;
+    height: 36px;
+    /* 모바일은 손가락 터치 영역 확보 위해 살짝 키움 */
+  }
+
+  /* 문서 링크 행 — 모바일에서 줄바꿈 자연스럽게 */
+  .doc-link-row {
+    gap: var(--space-sm);
+  }
+
+  /* 프로젝트 탭 — 모바일에서 줄바꿈 허용 + 간격 축소 */
+  .project-tabs {
+    flex-wrap: wrap;
+    gap: var(--space-md);
+  }
+
+  /* 스킬 등급 그리드 — 모바일에서 2열로 축소 */
+  .skill-rating-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* 스킬 카테고리 컬럼 — 모바일은 1열로, 카테고리가 위아래로 쌓임 */
+  .skill-rating-columns {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+
+  /* viewer 트리거 행 — 모바일에서 세로 스택 */
+  .viewer-trigger-row {
+    flex-direction: column;
+  }
+
+  .viewer-trigger {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  /* doc-viewer — 모바일에서 패딩 축소 */
+  .doc-viewer {
+    padding: var(--space-sm);
+  }
+
+  .doc-viewer__close {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* PDF 메인 영역 — 모바일은 비율 제약 풀고 자유롭게 늘어나도록 */
+  .doc-viewer__main--pdf {
+    aspect-ratio: auto;
+    max-height: none;
+    flex: 1 1 auto;
+  }
+
+  /* 항목 목록 — 모바일에서는 항목을 약간 작게 */
+  .doc-viewer__list-item {
+    width: 110px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ============================================================
+     TOP HEADER — 페이지 최상단 네비게이션 밴드
+     좌측 포트폴리오 명, 우측 섹션 점프 링크
+     ============================================================ -->
+<header class="top-header">
+  <div class="top-header__container">
+    <div class="top-header__brand">
+      서윤준 · <span class="top-header__brand-accent">Portfolio</span>
+    </div>
+    <nav class="top-header__nav">
+      <a class="top-header__nav-link is-active" href="#about">소개</a>
+      <a class="top-header__nav-link" href="#projects">프로젝트</a>
+      <a class="top-header__nav-link" href="#more">더 보기</a>
+      <a class="top-header__nav-link" href="#contact">연락</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============================================================
+     HERO BAND — 페이지 최상단 영웅 영역
+     좌측 키비주얼 SVG 캡슐, 우측 타이틀+슬로건+메타 사이드바
+     ============================================================ -->
+<section class="hero-band" id="about">
+  <div class="hero-band__container">
+
+    <!-- 히어로 캐러셀 — 프로젝트 키비주얼 자동 순환
+         슬라이드는 JS 가 페이지의 .project-panel 캡슐 SVG 들에서 자동 복제해 채움
+         (새 프로젝트 추가 시 패널만 추가하면 캐러셀에 자동 반영됨) -->
+    <div class="hero-band__capsule">
+      <div class="hero-carousel" id="hero-carousel">
+        <div class="hero-carousel__track" id="hero-carousel-track">
+          <!-- 슬라이드들은 JS 가 자동 생성 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 우측 타이틀 + 사이드바 -->
+    <div class="title-block">
+      <h1 class="title-block__title">서윤준 · 시스템 기획자</h1>
+      <div class="title-block__subtitle">
+        System Design · 신입 · 2026
+      </div>
+
+      <!-- 메인 CTA — 이력서 다운로드 (페이지 단일 그린 버튼) -->
+      <div class="title-block__cta-row">
+        <a class="cta-button-primary" href="#contact">이력서 다운로드</a>
+        <a class="cta-button-secondary" href="#projects">프로젝트 보기 →</a>
+      </div>
+
+      <!-- 메타 사이드바 — 핵심 정보 6행 -->
+      <div class="metadata-sidebar">
+        <div class="metadata-sidebar__row">
+          <div class="metadata-sidebar__label">직무</div>
+          <div class="metadata-sidebar__value">시스템 기획</div>
+        </div>
+        <div class="metadata-sidebar__row">
+          <div class="metadata-sidebar__label">상태</div>
+          <div class="metadata-sidebar__value metadata-sidebar__value--plain">신입 · 입사 가능</div>
+        </div>
+        <div class="metadata-sidebar__row">
+          <div class="metadata-sidebar__label">전 경력</div>
+          <div class="metadata-sidebar__value metadata-sidebar__value--plain">셀아처 코스메틱 · 회계/경영관리 4년</div>
+        </div>
+        <div class="metadata-sidebar__row">
+          <div class="metadata-sidebar__label">위치</div>
+          <div class="metadata-sidebar__value metadata-sidebar__value--plain">대한민국</div>
+        </div>
+        <div class="metadata-sidebar__row">
+          <div class="metadata-sidebar__label">이메일</div>
+          <div class="metadata-sidebar__value">koioas1@gmail.com</div>
+        </div>
+        <div class="metadata-sidebar__row">
+          <div class="metadata-sidebar__label">연락처</div>
+          <div class="metadata-sidebar__value metadata-sidebar__value--plain">010-9890-8719</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================
+     BODY WRAPPER — 히어로 아래의 본문 영역 컨테이너
+     mid-navy 표면으로 페이지의 중앙 부분을 채움
+     ============================================================ -->
+<div class="body-wrapper">
+
+  <!-- ============================================================
+       ABOUT — 자기소개 본문 (안 2 채택)
+       Lead 16px + 일반 14px, 인라인 시안 키워드 강조
+       ============================================================ -->
+  <div class="content-column">
+    <section class="section section--first" id="about-detail">
+      <div class="section-header">
+        <h2 class="section-header__title">About this designer</h2>
+      </div>
+
+      <div class="description-block">
+        <p class="description-block__lead">
+          시스템 기획자 서윤준입니다. 재미있는 게임은 결국 좋은 시스템 설계 위에서 완성된다고 생각합니다.<br>
+          <span class="kw">PathTowerDefence</span> 에서는 매 게임마다 무작위로 생성되는 적의 경로 위에
+          8칸 인벤토리, 타워 업그레이드, 경로 설계를 얹어<br>
+		  한 번의 타워 배치가 한 라운드의 전략이 되도록 설계했습니다.<br>
+          <span class="kw">Donut Crash</span> 에서는 전투 흐름을 5단계 프로세스로 정의하고 그 위에
+          12개 도넛 스킬과 7개 마녀 패시브를<br>
+		  같은 포맷으로 정리해 확장과 밸런싱이 용이한 구조로 만드는데 집중했습니다.
+        </p>
+        <p class="description-block__paragraph">
+          이전 직무에서 4년간 회계, 경영관리 실무를 경험하며 수치와 데이터의 흐름을 검증하는 업무를 수행하였고<br>
+          그 과정에서 <span class="kw">예외 상황과 누락 가능성을 점검</span>하는 습관을 길렀습니다.<br>
+          현재는 그 경험을 바탕으로 구현 단계에서
+          <span class="kw">개발자가 바로 작업 가능한 형태의 시스템 문서</span>를 만드는 기획자를 목표로 하고 있습니다.
+        </p>
+      </div>
+
+      <!-- 스탯 로우 — 핵심 수치 4셀 -->
+      <div class="stat-row">
+        <div class="stat-row__cell">
+          <div class="stat-row__value">3</div>
+          <div class="stat-row__label">진행한 게임 프로젝트</div>
+        </div>
+        <div class="stat-row__cell">
+          <div class="stat-row__value">19</div>
+          <div class="stat-row__label">설계한 스킬·패시브 명세</div>
+        </div>
+        <div class="stat-row__cell">
+          <div class="stat-row__value">5</div>
+          <div class="stat-row__label">정의한 배틀 페이즈 단계</div>
+        </div>
+        <div class="stat-row__cell">
+          <div class="stat-row__value">4y</div>
+          <div class="stat-row__label">데이터 검증 실무 경력</div>
+        </div>
+      </div>
+
+      <!-- 핵심 역량 셀프 평점 — 별점 5개 + 5단계 라벨 + 근거 캡션 -->
+      <div class="subsection-label">Core Skills</div>
+      <div class="skill-rating-grid">
+
+        <!-- ★★★★★ 전문 #1 — 시스템 기획서 작성 (DC 5단계 페이즈 + 12+7 스킬 시스템 + 합성 메타 루프) -->
+        <div class="skill-rating-item">
+          <div class="skill-rating-item__name">시스템 기획서 작성</div>
+          <div class="skill-rating-item__bottom">
+            <span class="skill-rating-item__stars skill-rating-item__stars--adept">
+              <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+            </span>
+            <span class="skill-rating-item__rating skill-rating-item__rating--adept">숙련</span>
+          </div>
+          <div class="skill-rating-item__note">DC 5단계 배틀 페이즈 + 12개 도넛·7개 마녀 스킬 시스템<br> + 합성 메타 루프</div>
+        </div>
+
+        <!-- ★★★★★ 전문 #2 — 레벨 기획서 작성 (시스템 기획자 시선의 단일 스키마 명세 능력) -->
+        <div class="skill-rating-item">
+          <div class="skill-rating-item__name">레벨 기획서 작성</div>
+          <div class="skill-rating-item__bottom">
+            <span class="skill-rating-item__stars skill-rating-item__stars--adept">
+              <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+            </span>
+            <span class="skill-rating-item__rating skill-rating-item__rating--adept">숙련</span>
+          </div>
+          <div class="skill-rating-item__note">3개 프로젝트 7개 기획서 · 통일 명세 포맷 ·<br> 19개 스킬·패시브 단일 스키마 정의</div>
+        </div>
+
+        <!-- ★★★★☆ 숙련 #3 — 상태 머신 (DC 페이즈 전환 트리거·종료 조건) -->
+        <div class="skill-rating-item">
+          <div class="skill-rating-item__name">상태 머신</div>
+          <div class="skill-rating-item__bottom">
+            <span class="skill-rating-item__stars skill-rating-item__stars--adept">
+              <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+            </span>
+            <span class="skill-rating-item__rating skill-rating-item__rating--adept">숙련</span>
+          </div>
+          <div class="skill-rating-item__note">DC 5단계 배틀 페이즈 · 페이즈 전환 트리거 ·<br> 종료 조건 정의</div>
+        </div>
+
+        <!-- ★★★★☆ 숙련 #4 — 데이터 테이블 설계 (★3→★4 승격, 회계 4년 데이터 감각의 시스템 기획자 핵심) -->
+        <div class="skill-rating-item">
+          <div class="skill-rating-item__name">데이터 테이블 설계</div>
+          <div class="skill-rating-item__bottom">
+            <span class="skill-rating-item__stars skill-rating-item__stars--adept">
+              <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+            </span>
+            <span class="skill-rating-item__rating skill-rating-item__rating--adept">숙련</span>
+          </div>
+          <div class="skill-rating-item__note">도넛 21종 × 13컬럼 단일 스키마 ·<br> 12종 스킬을 Lv.1~3로 표준화</div>
+        </div>
+
+        <!-- ★★★★☆ 숙련 #5 — 레벨 디자인 (★5→★4 강등, 시스템의 결과물로서의 레벨) -->
+        <div class="skill-rating-item">
+          <div class="skill-rating-item__name">레벨 디자인</div>
+          <div class="skill-rating-item__bottom">
+            <span class="skill-rating-item__stars skill-rating-item__stars--adept">
+              <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+            </span>
+            <span class="skill-rating-item__rating skill-rating-item__rating--adept">숙련</span>
+          </div>
+          <div class="skill-rating-item__note">PTD 절차적 맵 위 4종족 시너지 시스템 ·<br> 적 경로 유도 규칙으로 만든 레벨</div>
+        </div>
+
+        <!-- ★★★★☆ 숙련 #6 — 예외처리 정의 (★3→★4 승격, 회계 4년 분기·검증 감각의 시스템 명세화) -->
+        <div class="skill-rating-item">
+          <div class="skill-rating-item__name">예외처리 정의</div>
+          <div class="skill-rating-item__bottom">
+            <span class="skill-rating-item__stars skill-rating-item__stars--adept">
+              <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+            </span>
+            <span class="skill-rating-item__rating skill-rating-item__rating--adept">숙련</span>
+          </div>
+          <div class="skill-rating-item__note">DC 입력 안전장치 명세 ·<br> 회계 4년의 분기·검증 감각을 시스템 명세에 적용</div>
+        </div>
+
+        <!-- ★★★★☆ 숙련 #7 — UI 흐름도 (팝업 명세 → 팝업 상태 전이도로 어휘 자체를 시스템 기획서 용어로) -->
+        <div class="skill-rating-item">
+          <div class="skill-rating-item__name">UI 흐름도</div>
+          <div class="skill-rating-item__bottom">
+            <span class="skill-rating-item__stars skill-rating-item__stars--adept">
+              <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+            </span>
+            <span class="skill-rating-item__rating skill-rating-item__rating--adept">숙련</span>
+          </div>
+          <div class="skill-rating-item__note">DonutCrash, 생쥐대탈출 등 팝업 상태 전이도 ·<br> 픽셀 단위 흐름 정의</div>
+        </div>
+
+        <!-- ★★★☆☆ 활용 #8 — 밸런스 시뮬레이션 (★4→★3 강등, 시뮬레이션은 도구로 사용) -->
+        <div class="skill-rating-item">
+          <div class="skill-rating-item__name">밸런스 시뮬레이션</div>
+          <div class="skill-rating-item__bottom">
+            <span class="skill-rating-item__stars skill-rating-item__stars--applied">
+              <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+            </span>
+            <span class="skill-rating-item__rating skill-rating-item__rating--applied">활용</span>
+          </div>
+          <div class="skill-rating-item__note">PTD 웨이브 곡선, 전투결과를 사전 검증 ·<br> Excel 시트로 시뮬레이터 제작</div>
+        </div>
+
+        <!-- ★★★☆☆ 활용 #9 — 절차적 맵 설계 (★4→★3 강등, 규칙·제약 정의로 시스템 어휘화) -->
+        <div class="skill-rating-item">
+          <div class="skill-rating-item__name">절차적 맵 설계</div>
+          <div class="skill-rating-item__bottom">
+            <span class="skill-rating-item__stars skill-rating-item__stars--applied">
+              <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+            </span>
+            <span class="skill-rating-item__rating skill-rating-item__rating--applied">활용</span>
+          </div>
+          <div class="skill-rating-item__note">PTD 무작위 경로 생성 규칙 · 절대 차단 불가 제약 정의</div>
+        </div>
+
+        <!-- ★★★☆☆ 활용 #10 — 경제 루프 설계 (광고 보상 지급식 설계 — 모델 사용자가 아닌 설계자 시선) -->
+        <div class="skill-rating-item">
+          <div class="skill-rating-item__name">경제 루프 설계</div>
+          <div class="skill-rating-item__bottom">
+            <span class="skill-rating-item__stars skill-rating-item__stars--applied">
+              <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+            </span>
+            <span class="skill-rating-item__rating skill-rating-item__rating--applied">활용</span>
+          </div>
+          <div class="skill-rating-item__note">생쥐 대탈출 재화 생성·소모 구조 · 광고 보상 지급식 설계</div>
+        </div>
+      </div>
+
+      <!-- 사용 가능 툴 셀프 평점 — 카테고리 컬럼 분리 -->
+      <div class="subsection-label" style="margin-top: var(--space-lg);">Software</div>
+      <div class="skill-rating-columns">
+
+        <!-- 컬럼 1: ENGINE — 게임 엔진 / 구현 -->
+        <div class="skill-rating-column">
+          <div class="skill-rating-column__header">
+            <span class="skill-rating-column__label">Engine</span>
+            <span class="skill-rating-column__line"></span>
+          </div>
+          <div class="skill-rating-item">
+            <div class="skill-rating-item__name">GameMaker Studio 2</div>
+            <div class="skill-rating-item__bottom">
+              <span class="skill-rating-item__stars skill-rating-item__stars--adept">
+                <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+              </span>
+              <span class="skill-rating-item__rating skill-rating-item__rating--adept">숙련</span>
+            </div>
+            <div class="skill-rating-item__note">PTD 1인 개발 · 기획부터 구현·빌드까지 전 과정</div>
+          </div>
+          <div class="skill-rating-item">
+            <div class="skill-rating-item__name">Unity</div>
+            <div class="skill-rating-item__bottom">
+              <span class="skill-rating-item__stars skill-rating-item__stars--applied">
+                <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+              </span>
+              <span class="skill-rating-item__rating skill-rating-item__rating--applied">활용</span>
+            </div>
+            <div class="skill-rating-item__note">엔진 환경 이해 · 기본 씬·컴포넌트 작업 가능</div>
+          </div>
+        </div>
+
+        <!-- 컬럼 2: DOCS & DATA — 기획서 작성 + 데이터 작업 -->
+        <div class="skill-rating-column">
+          <div class="skill-rating-column__header">
+            <span class="skill-rating-column__label">Docs &amp; Data</span>
+            <span class="skill-rating-column__line"></span>
+          </div>
+          <div class="skill-rating-item">
+            <div class="skill-rating-item__name">Excel</div>
+            <div class="skill-rating-item__bottom">
+              <span class="skill-rating-item__stars skill-rating-item__stars--expert">
+                <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+              </span>
+              <span class="skill-rating-item__rating skill-rating-item__rating--expert">전문</span>
+            </div>
+            <div class="skill-rating-item__note">회계 4년 실무 · PTD 웨이브 시뮬레이션 시트 직접 제작</div>
+          </div>
+          <div class="skill-rating-item">
+            <div class="skill-rating-item__name">Notion</div>
+            <div class="skill-rating-item__bottom">
+              <span class="skill-rating-item__stars skill-rating-item__stars--adept">
+                <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+              </span>
+              <span class="skill-rating-item__rating skill-rating-item__rating--adept">숙련</span>
+            </div>
+            <div class="skill-rating-item__note">3개 프로젝트 기획서 베이스 · 데이터베이스·연동 활용</div>
+          </div>
+          <div class="skill-rating-item">
+            <div class="skill-rating-item__name">Figma</div>
+            <div class="skill-rating-item__bottom">
+              <span class="skill-rating-item__stars skill-rating-item__stars--adept">
+                <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+              </span>
+              <span class="skill-rating-item__rating skill-rating-item__rating--adept">숙련</span>
+            </div>
+            <div class="skill-rating-item__note">Donut Crash 인게임 UI 프로토타입 · 320×568 픽셀 정의</div>
+          </div>
+          <div class="skill-rating-item">
+            <div class="skill-rating-item__name">MS Word</div>
+            <div class="skill-rating-item__bottom">
+              <span class="skill-rating-item__stars skill-rating-item__stars--using">
+                <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+              </span>
+              <span class="skill-rating-item__rating skill-rating-item__rating--using">사용</span>
+            </div>
+            <div class="skill-rating-item__note">기본 문서 작성 · 양식 정리</div>
+          </div>
+          <div class="skill-rating-item">
+            <div class="skill-rating-item__name">MS PowerPoint</div>
+            <div class="skill-rating-item__bottom">
+              <span class="skill-rating-item__stars skill-rating-item__stars--using">
+                <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+              </span>
+              <span class="skill-rating-item__rating skill-rating-item__rating--using">사용</span>
+            </div>
+            <div class="skill-rating-item__note">기본 슬라이드 작성 · 발표 자료 정리</div>
+          </div>
+        </div>
+
+        <!-- 컬럼 3: COMMS & AI — 협업 + AI 보조 -->
+        <div class="skill-rating-column">
+          <div class="skill-rating-column__header">
+            <span class="skill-rating-column__label">Comms &amp; AI</span>
+            <span class="skill-rating-column__line"></span>
+          </div>
+          <!-- ★★★☆☆ 활용 — ChatGPT (기획 방향 검토 보조) -->
+          <div class="skill-rating-item">
+            <div class="skill-rating-item__name">ChatGPT</div>
+            <div class="skill-rating-item__bottom">
+              <span class="skill-rating-item__stars skill-rating-item__stars--applied">
+                <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+              </span>
+              <span class="skill-rating-item__rating skill-rating-item__rating--applied">활용</span>
+            </div>
+            <div class="skill-rating-item__note">기획 방향 검토 · 문서 정리 보조</div>
+          </div>
+          <!-- ★★★☆☆ 활용 — Claude (디자인 시스템 적용·단계별 의사결정 보조) -->
+          <div class="skill-rating-item">
+            <div class="skill-rating-item__name">Claude</div>
+            <div class="skill-rating-item__bottom">
+              <span class="skill-rating-item__stars skill-rating-item__stars--applied">
+                <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+              </span>
+              <span class="skill-rating-item__rating skill-rating-item__rating--applied">활용</span>
+            </div>
+            <div class="skill-rating-item__note">디자인 시스템 적용 · 단계별 의사결정 보조</div>
+          </div>
+          <!-- ★★☆☆☆ 사용 — Jira (이슈 트래킹 기본 사용) -->
+          <div class="skill-rating-item">
+            <div class="skill-rating-item__name">Jira</div>
+            <div class="skill-rating-item__bottom">
+              <span class="skill-rating-item__stars skill-rating-item__stars--using">
+                <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+              </span>
+              <span class="skill-rating-item__rating skill-rating-item__rating--using">사용</span>
+            </div>
+            <div class="skill-rating-item__note">이슈 트래킹 기본 사용</div>
+          </div>
+          <!-- ★★☆☆☆ 사용 — Slack (팀 협업 기본 사용) -->
+          <div class="skill-rating-item">
+            <div class="skill-rating-item__name">Slack</div>
+            <div class="skill-rating-item__bottom">
+              <span class="skill-rating-item__stars skill-rating-item__stars--using">
+                <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+              </span>
+              <span class="skill-rating-item__rating skill-rating-item__rating--using">사용</span>
+            </div>
+            <div class="skill-rating-item__note">팀 협업 기본 사용</div>
+          </div>
+          <!-- ★★☆☆☆ 사용 — Gemini (보조 검색·정리 도구) -->
+          <div class="skill-rating-item">
+            <div class="skill-rating-item__name">Gemini</div>
+            <div class="skill-rating-item__bottom">
+              <span class="skill-rating-item__stars skill-rating-item__stars--using">
+                <svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg><svg class="skill-rating-item__star skill-rating-item__star--empty" viewBox="0 0 12 12" fill="currentColor"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5"/></svg>
+              </span>
+              <span class="skill-rating-item__rating skill-rating-item__rating--using">사용</span>
+            </div>
+            <div class="skill-rating-item__note">보조 검색·정리 도구로 사용</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+
+  <!-- ============================================================
+       PROJECTS — 3개 프로젝트 쇼케이스
+       각 프로젝트마다: 캡슐 + 타이틀 + 설명 + 썸네일 + 태그 + 시스템정보
+       ============================================================ -->
+  <div class="content-column" id="projects">
+
+    <!-- ============================================================
+         PROJECTS — 통합 프로젝트 섹션 (탭 전환식)
+         3개 프로젝트가 .project-panel 로 분리, 탭 클릭 시 1개만 표시
+         URL 해시(#ptd-detail / #dc-detail / #mouse-detail)와 동기화
+
+         ┌─────────────────────────────────────────────────────────┐
+         │ 새 프로젝트 추가 가이드                                  │
+         ├─────────────────────────────────────────────────────────┤
+         │ 1. 아래 .project-tabs 안에 새 탭 버튼 1개 추가             │
+         │    (data-target / aria-controls 에 새 패널 ID 명시)        │
+         │ 2. 새 .project-panel 블록을 마지막 패널 뒤에 추가           │
+         │    (project-showcase__hero, 본문, viewer-trigger-row,     │
+         │     thumbnail-strip--data, 태그, 시스템정보 모두 포함)        │
+         │ 3. 페이지 하단 <script> 의 projectAssets 객체에 새 키 추가  │
+         │    (docs / videos / shotsCount 정의)                        │
+         │                                                             │
+         │ 자동 처리되는 항목 (수정 불필요):                            │
+         │ - 히어로 캐러셀 슬라이드 (project-panel 에서 자동 복제)        │
+         │ - 탭 키보드 네비게이션 (←/→/Home/End)                       │
+         │ - URL 해시 라우팅 (data-target 에서 자동 등록)                │
+         │ - 라이트박스 (썸네일에서 자동 인식)                            │
+         └─────────────────────────────────────────────────────────┘
+         ============================================================ -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-header__title">Projects</h2>
+      </div>
+
+      <!-- 프로젝트 탭 — 안 A (톱 헤더 nav 스타일) 채택 -->
+      <div class="project-tabs" role="tablist" aria-label="프로젝트 선택">
+        <button type="button"
+                class="project-tabs__button is-active"
+                role="tab"
+                aria-selected="true"
+                aria-controls="ptd-detail"
+                data-target="ptd-detail">
+          PathTowerDefence
+        </button>
+        <button type="button"
+                class="project-tabs__button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="dc-detail"
+                data-target="dc-detail">
+          Donut Crash
+        </button>
+        <button type="button"
+                class="project-tabs__button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="mouse-detail"
+                data-target="mouse-detail">
+          생쥐 대탈출
+        </button>
+      </div>
+
+      <!-- ----- PROJECT 1 · PathTowerDefence (기본 활성 탭) ----- -->
+      <div class="project-showcase project-panel is-active"
+           id="ptd-detail"
+           role="tabpanel"
+           aria-labelledby="ptd-tab"
+           tabindex="0">
+
+        <!-- PTD 캡슐 — 절차적 맵·경로 모티프 SVG -->
+        <div class="project-showcase__hero">
+          <svg viewBox="0 0 940 529" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+            <defs>
+              <linearGradient id="ptdBg" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#2a475e" />
+                <stop offset="100%" stop-color="#1b2838" />
+              </linearGradient>
+            </defs>
+            <rect x="0" y="0" width="940" height="529" fill="url(#ptdBg)" />
+
+            <!-- 그리드 맵 — 9x16 타일 -->
+            <g stroke="#66c0f4" stroke-opacity="0.10" stroke-width="1">
+              <!-- 세로선 -->
+              <line x1="100" y1="60" x2="100" y2="469" />
+              <line x1="155" y1="60" x2="155" y2="469" />
+              <line x1="210" y1="60" x2="210" y2="469" />
+              <line x1="265" y1="60" x2="265" y2="469" />
+              <line x1="320" y1="60" x2="320" y2="469" />
+              <line x1="375" y1="60" x2="375" y2="469" />
+              <line x1="430" y1="60" x2="430" y2="469" />
+              <line x1="485" y1="60" x2="485" y2="469" />
+              <line x1="540" y1="60" x2="540" y2="469" />
+              <line x1="595" y1="60" x2="595" y2="469" />
+              <line x1="650" y1="60" x2="650" y2="469" />
+              <line x1="705" y1="60" x2="705" y2="469" />
+              <line x1="760" y1="60" x2="760" y2="469" />
+              <line x1="815" y1="60" x2="815" y2="469" />
+              <!-- 가로선 -->
+              <line x1="100" y1="60" x2="815" y2="60" />
+              <line x1="100" y1="115" x2="815" y2="115" />
+              <line x1="100" y1="170" x2="815" y2="170" />
+              <line x1="100" y1="225" x2="815" y2="225" />
+              <line x1="100" y1="280" x2="815" y2="280" />
+              <line x1="100" y1="335" x2="815" y2="335" />
+              <line x1="100" y1="390" x2="815" y2="390" />
+              <line x1="100" y1="445" x2="815" y2="445" />
+            </g>
+
+            <!-- 타워 블록들 (드워프/엘프/인간/용족 색상으로 구분) -->
+            <!-- 인간 타워 (회색) -->
+            <rect x="265" y="170" width="55" height="55" fill="#8f98a0" fill-opacity="0.7" stroke="#c7d5e0" stroke-width="1" />
+            <rect x="265" y="225" width="55" height="55" fill="#8f98a0" fill-opacity="0.7" stroke="#c7d5e0" stroke-width="1" />
+            <rect x="430" y="115" width="55" height="55" fill="#8f98a0" fill-opacity="0.7" stroke="#c7d5e0" stroke-width="1" />
+            <!-- 엘프 타워 (녹색) -->
+            <rect x="320" y="280" width="55" height="55" fill="#5c7e10" fill-opacity="0.6" stroke="#a4d007" stroke-width="1" />
+            <rect x="540" y="280" width="55" height="55" fill="#5c7e10" fill-opacity="0.6" stroke="#a4d007" stroke-width="1" />
+            <!-- 드워프 타워 (주황) -->
+            <rect x="595" y="115" width="55" height="55" fill="#a05d2e" fill-opacity="0.7" stroke="#e08c54" stroke-width="1" />
+            <rect x="650" y="335" width="55" height="55" fill="#a05d2e" fill-opacity="0.7" stroke="#e08c54" stroke-width="1" />
+            <!-- 용족 타워 (적색) -->
+            <rect x="705" y="225" width="55" height="55" fill="#7a2828" fill-opacity="0.7" stroke="#d04848" stroke-width="1" />
+
+            <!-- 적 경로 (붉은 선) — 절차적 생성 모티프 -->
+            <path d="M 100 87 L 240 87 L 240 252 L 320 252 L 320 198 L 405 198 L 405 142 L 595 142 L 595 252 L 730 252 L 730 360 L 815 360"
+                  stroke="#d04848" stroke-width="3" fill="none" stroke-opacity="0.9" />
+
+            <!-- 스폰 포인트 (좌측) — 작은 동그라미 -->
+            <circle cx="100" cy="87" r="10" fill="#d04848" stroke="#ffffff" stroke-width="2" />
+            <text x="100" y="50" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="11" fill="#c7d5e0" text-anchor="middle" letter-spacing="1">SPAWN</text>
+
+            <!-- 도착 지점 (우측) — 큰 동그라미 -->
+            <circle cx="815" cy="360" r="14" fill="#66c0f4" stroke="#ffffff" stroke-width="2" />
+            <text x="815" y="395" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="11" fill="#c7d5e0" text-anchor="middle" letter-spacing="1">GOAL</text>
+
+            <!-- 상단 라벨 -->
+            <text x="470" y="35" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="14" fill="#66c0f4" text-anchor="middle" letter-spacing="3" font-weight="700">PROCEDURAL PATHING / RACE SYNERGY TOWERS</text>
+
+            <!-- 하단 메타 -->
+            <text x="100" y="510" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="10" fill="#8f98a0" letter-spacing="1">PTD &middot; Tower Defense + Strategy Sim &middot; PC &middot; Solo Project</text>
+          </svg>
+        </div>
+
+        <h3 class="project-showcase__title">PathTowerDefence</h3>
+        <div class="project-showcase__meta">
+          타워디펜스 · 전략게임 · PC · 1인개발 · 2025
+        </div>
+
+        <div class="description-block">
+          <p class="description-block__lead">
+            <span class="kw">매 게임마다 무작위로 생성되는 적의 경로</span>를 막아내는 1인 개발 타워디펜스 게임입니다.<br>
+            기존 타워디펜스의 정해진 경로, 고정 배치 대신 <span class="kw">절차적 경로 설계 시스템</span>을 도입하여<br> 플레이어가 직접 경로를 유도하되
+            <span class="kw">"절대 차단 불가"</span> 제약을 두어,<br>매 게임마다 다른 플레이 경험을 느낄 수 있도록 핵심 루프를 만들었습니다.
+          </p>
+          <p class="description-block__paragraph">
+            기획·시스템 설계·구현·테스트를 모두 단독으로 진행하며 컨셉부터 빌드까지의 전 과정을 경험했습니다.<br>
+            <span class="kw">절차적 경로 설계 시스템</span>의 제약으로 "절대 차단 불가"를 두었고,<br>
+            <span class="kw">8칸 인벤토리, 상점에 무작위로 보충되는 기물</span>의 메타 루프로
+            매 게임마다 다른 전략이 강제되도록 시스템을 짰습니다.
+          </p>
+          <p class="description-block__paragraph">
+            <span class="kw">4종족 각각의 고유한 공격 특성, 4가지 적 각각의 고유한 특성</span>을 적용한 뒤,<br>
+			<span class="kw">엑셀 시뮬레이션</span>으로 DPS, 체력 곡선을 <span class="kw">사전 검증</span>한 뒤 시스템에 반영하였습니다.
+          </p>
+        </div>
+
+        <!-- PTD 자료 뷰어 버튼 행 — 기획서/영상/스크린샷 3가지 패널 진입점 -->
+        <div class="viewer-trigger-row">
+          <button type="button"
+                  class="viewer-trigger viewer-trigger--docs"
+                  data-project="ptd"
+                  data-viewer-type="docs">
+            <svg class="viewer-trigger__icon" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M4 1.5h6.5L13 4v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1zm0 1v11h8V5h-2.5V2.5H4zm6.5 0v2H12L10.5 2.5z"/>
+            </svg>
+            기획서 열람
+          </button>
+          <button type="button"
+                  class="viewer-trigger viewer-trigger--videos"
+                  data-project="ptd"
+                  data-viewer-type="videos">
+            <svg class="viewer-trigger__icon" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M3 2.5h10a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zm3 2.5v6l5-3-5-3z"/>
+            </svg>
+            플레이 영상
+          </button>
+          <button type="button"
+                  class="viewer-trigger viewer-trigger--shots"
+                  data-project="ptd"
+                  data-viewer-type="shots">
+            <svg class="viewer-trigger__icon" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M2.5 3h11a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm.5 1.5v7l3-3 2 2 3-4 3 5h-11zm9-1.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
+            </svg>
+            스크린샷
+          </button>
+        </div>
+
+        <!-- PTD 스크린샷 데이터 — 화면에는 비표시, viewer 가 읽어 사용
+             기존 4-up 그리드를 페이지에서 숨기고 데이터 소스로만 활용 -->
+        <div class="thumbnail-strip thumbnail-strip--data" data-project="ptd" hidden>
+          <!-- 썸네일 1 — 인게임 플레이 -->
+          <div class="thumbnail-frame" tabindex="0" data-caption="PTD 인게임 플레이 — 그리드 맵 + 적 경로 + 종족 타워 배치">
+            <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <rect x="0" y="0" width="320" height="180" fill="#3a5a3a" />
+              <!-- 그리드 미니어처 -->
+              <g stroke="#000000" stroke-opacity="0.2" stroke-width="0.5">
+                <line x1="0" y1="30" x2="320" y2="30" />
+                <line x1="0" y1="60" x2="320" y2="60" />
+                <line x1="0" y1="90" x2="320" y2="90" />
+                <line x1="0" y1="120" x2="320" y2="120" />
+                <line x1="0" y1="150" x2="320" y2="150" />
+                <line x1="50" y1="0" x2="50" y2="180" />
+                <line x1="100" y1="0" x2="100" y2="180" />
+                <line x1="150" y1="0" x2="150" y2="180" />
+                <line x1="200" y1="0" x2="200" y2="180" />
+                <line x1="250" y1="0" x2="250" y2="180" />
+              </g>
+              <!-- 적 경로 -->
+              <path d="M 20 30 L 90 30 L 90 90 L 180 90 L 180 50 L 280 50" stroke="#d04848" stroke-width="2.5" fill="none" />
+              <!-- 타워들 -->
+              <rect x="40" y="50" width="20" height="20" fill="#8f98a0" stroke="#c7d5e0" />
+              <rect x="40" y="100" width="20" height="20" fill="#8f98a0" stroke="#c7d5e0" />
+              <rect x="120" y="60" width="20" height="20" fill="#5c7e10" stroke="#a4d007" />
+              <rect x="200" y="100" width="20" height="20" fill="#a05d2e" stroke="#e08c54" />
+              <rect x="220" y="20" width="20" height="20" fill="#7a2828" stroke="#d04848" />
+              <!-- 상단 HUD -->
+              <rect x="0" y="0" width="320" height="14" fill="#171a21" fill-opacity="0.7" />
+              <text x="6" y="10" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="7" fill="#c7d5e0">골드:43 · HP:12 · 웨이브:10</text>
+              <!-- 하단 HUD -->
+              <rect x="0" y="160" width="320" height="20" fill="#171a21" fill-opacity="0.85" />
+              <text x="160" y="173" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="8" fill="#66c0f4" text-anchor="middle">웨이브 시작</text>
+            </svg>
+          </div>
+
+          <!-- 썸네일 2 — 종족 시너지 발동 화면 -->
+          <div class="thumbnail-frame" tabindex="0" data-caption="종족 시너지 발동 화면">
+            <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <rect x="0" y="0" width="320" height="180" fill="#1b2838" />
+              <!-- 4종족 카드 -->
+              <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#c7d5e0">
+                <!-- 인간 -->
+                <rect x="20" y="40" width="60" height="80" fill="#2a475e" stroke="#8f98a0" stroke-width="1" />
+                <text x="50" y="60" text-anchor="middle">인간</text>
+                <text x="50" y="78" text-anchor="middle" font-size="7" fill="#8f98a0">밸런스</text>
+                <text x="50" y="92" text-anchor="middle" font-size="7" fill="#a4d007">+ATK +SPD</text>
+                <!-- 엘프 -->
+                <rect x="90" y="40" width="60" height="80" fill="#2a475e" stroke="#5c7e10" stroke-width="1" />
+                <text x="120" y="60" text-anchor="middle">엘프</text>
+                <text x="120" y="78" text-anchor="middle" font-size="7" fill="#8f98a0">속공</text>
+                <text x="120" y="92" text-anchor="middle" font-size="7" fill="#a4d007">+SLOW</text>
+                <!-- 드워프 -->
+                <rect x="160" y="40" width="60" height="80" fill="#2a475e" stroke="#a05d2e" stroke-width="1" />
+                <text x="190" y="60" text-anchor="middle">드워프</text>
+                <text x="190" y="78" text-anchor="middle" font-size="7" fill="#8f98a0">화력</text>
+                <text x="190" y="92" text-anchor="middle" font-size="7" fill="#a4d007">+GOLD</text>
+                <!-- 용족 -->
+                <rect x="230" y="40" width="60" height="80" fill="#2a475e" stroke="#7a2828" stroke-width="1" />
+                <text x="260" y="60" text-anchor="middle">용족</text>
+                <text x="260" y="78" text-anchor="middle" font-size="7" fill="#8f98a0">단일딜</text>
+                <text x="260" y="92" text-anchor="middle" font-size="7" fill="#a4d007">+CRIT</text>
+              </g>
+              <!-- 헤더 -->
+              <text x="160" y="25" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="11" fill="#66c0f4" text-anchor="middle" letter-spacing="2">RACE SYNERGY</text>
+              <!-- 푸터 -->
+              <text x="160" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#66c0f4" text-anchor="middle">시너지 활성: 인간×3</text>
+            </svg>
+          </div>
+
+          <!-- 썸네일 3 — 인벤토리 합성 -->
+          <div class="thumbnail-frame" tabindex="0" data-caption="인벤토리 합성">
+            <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <rect x="0" y="0" width="320" height="180" fill="#1b2838" />
+              <!-- 인벤토리 8칸 -->
+              <g>
+                <rect x="20" y="60" width="32" height="32" fill="#2a475e" stroke="#8f98a0" />
+                <rect x="56" y="60" width="32" height="32" fill="#2a475e" stroke="#a4d007" stroke-width="1.5" />
+                <rect x="92" y="60" width="32" height="32" fill="#2a475e" stroke="#a4d007" stroke-width="1.5" />
+                <rect x="128" y="60" width="32" height="32" fill="#2a475e" stroke="#a4d007" stroke-width="1.5" />
+                <rect x="164" y="60" width="32" height="32" fill="#2a475e" stroke="#8f98a0" />
+                <rect x="200" y="60" width="32" height="32" fill="#2a475e" stroke="#8f98a0" />
+                <rect x="236" y="60" width="32" height="32" fill="#2a475e" stroke="#8f98a0" />
+                <rect x="272" y="60" width="32" height="32" fill="#2a475e" stroke="#8f98a0" />
+              </g>
+              <!-- 화살표 -->
+              <path d="M 92 110 L 92 130 L 156 130 L 156 145" stroke="#66c0f4" stroke-width="1.5" fill="none" />
+              <polygon points="152,141 156,149 160,141" fill="#66c0f4" />
+              <!-- 결과 카드 -->
+              <rect x="140" y="145" width="40" height="22" fill="#316282" stroke="#66c0f4" stroke-width="1.5" />
+              <text x="160" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="8" fill="#ffffff" text-anchor="middle">Lv.2</text>
+              <!-- 상단 -->
+              <text x="160" y="35" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="11" fill="#66c0f4" text-anchor="middle" letter-spacing="2">3 ≫ 1 MERGE</text>
+              <text x="160" y="48" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="8" fill="#8f98a0" text-anchor="middle">동일 타워 3기 → 한 단계 강화</text>
+            </svg>
+          </div>
+
+          <!-- 썸네일 4 — 웨이브 밸런스 시뮬레이션 그래프 -->
+          <div class="thumbnail-frame" tabindex="0" data-caption="웨이브 밸런스 시뮬레이션 그래프">
+            <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <rect x="0" y="0" width="320" height="180" fill="#1b2838" />
+              <!-- 축 -->
+              <line x1="30" y1="30" x2="30" y2="150" stroke="#8f98a0" stroke-width="1" />
+              <line x1="30" y1="150" x2="300" y2="150" stroke="#8f98a0" stroke-width="1" />
+              <!-- 그리드 -->
+              <g stroke="#8f98a0" stroke-opacity="0.15" stroke-width="0.5">
+                <line x1="30" y1="120" x2="300" y2="120" />
+                <line x1="30" y1="90" x2="300" y2="90" />
+                <line x1="30" y1="60" x2="300" y2="60" />
+              </g>
+              <!-- 데이터 곡선 1 — 기본 HP -->
+              <polyline points="30,143 47,138 64,131 81,123 98,113 115,102 132,90 149,77 166,65 183,57 200,52 217,46 234,40 251,35 268,32 285,30"
+                        stroke="#66c0f4" stroke-width="2" fill="none" />
+              <!-- 데이터 곡선 2 — 라이트닝 HP -->
+              <polyline points="30,140 47,134 64,124 81,113 98,99 115,84 132,68 149,52 166,40 183,30 200,22 217,18 234,16 251,14 268,12 285,10"
+                        stroke="#a4d007" stroke-width="2" fill="none" stroke-dasharray="3,2" />
+              <!-- 라벨 -->
+              <text x="160" y="20" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="10" fill="#66c0f4" text-anchor="middle" letter-spacing="2">WAVE BALANCE CURVE</text>
+              <text x="305" y="155" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="8" fill="#8f98a0" text-anchor="end">Wave →</text>
+              <text x="35" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="8" fill="#8f98a0">HP</text>
+              <!-- 범례 -->
+              <line x1="200" y1="165" x2="215" y2="165" stroke="#66c0f4" stroke-width="2" />
+              <text x="220" y="168" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="7" fill="#c7d5e0">기본</text>
+              <line x1="245" y1="165" x2="260" y2="165" stroke="#a4d007" stroke-width="2" stroke-dasharray="3,2" />
+              <text x="265" y="168" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="7" fill="#c7d5e0">엘리트</text>
+            </svg>
+          </div>
+        </div>
+
+        <!-- PTD 핵심 기능 태그 -->
+        <div class="subsection-label">Design Highlights</div>
+        <div class="tag-cluster">
+          <span class="tag-pill">절차적 맵 생성</span>
+          <span class="tag-pill">경로 유도 규칙</span>
+          <span class="tag-pill">8칸 인벤토리 루프</span>
+          <span class="tag-pill">3개 합성 업그레이드</span>
+          <span class="tag-pill">무작위 상점 메타</span>
+          <span class="tag-pill">4종족 시너지</span>
+          <span class="tag-pill">웨이브 밸런스 곡선</span>
+          <span class="tag-pill">절대 차단 불가 규칙</span>
+          <span class="tag-pill">1인 개발</span>
+        </div>
+
+        <!-- PTD 시스템 정보 -->
+        <div class="subsection-label" style="margin-top: var(--space-lg);">System Info</div>
+        <div class="system-info-table">
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">장르</div>
+            <div class="system-info-table__value">타워디펜스 / 전략 시뮬레이션</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">플랫폼</div>
+            <div class="system-info-table__value">PC (Windows)</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">팀 구성</div>
+            <div class="system-info-table__value">1인 — 기획 / 시스템 설계 / 구현 / 테스트 전담</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">담당 역할</div>
+            <div class="system-info-table__value">코어 시스템 설계 + 절차적 맵·웨이브 설계 + 종족 시너지 시스템 + 인벤토리·합성 메타 루프</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">사용 엔진</div>
+            <div class="system-info-table__value">GameMaker Studio 2 (GML)</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">개발 기간</div>
+            <div class="system-info-table__value">2025 (개인 프로젝트)</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">사용 도구</div>
+            <div class="system-info-table__value">GMS2, Excel (밸런스 시뮬레이션), Notion (문서)</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">빌드 / 링크</div>
+            <div class="system-info-table__value">추후 추가 예정</div>
+          </div>
+        </div>
+
+      </div>
+      <!-- ----- PTD 패널 끝 ----- -->
+
+      <!-- ----- PROJECT 2 · Donut Crash 패널 ----- -->
+      <div class="project-showcase project-panel"
+           id="dc-detail"
+           role="tabpanel"
+           aria-labelledby="dc-tab"
+           tabindex="0">
+
+        <!-- DC 캡슐 — 5단계 배틀 페이즈 + 도넛 충돌 모티프 SVG -->
+        <div class="project-showcase__hero">
+          <svg viewBox="0 0 940 529" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+            <defs>
+              <linearGradient id="dcBg" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#316282" />
+                <stop offset="100%" stop-color="#1b2838" />
+              </linearGradient>
+            </defs>
+            <rect x="0" y="0" width="940" height="529" fill="url(#dcBg)" />
+
+            <!-- 격자 -->
+            <g stroke="#66c0f4" stroke-opacity="0.05" stroke-width="1">
+              <line x1="0" y1="100" x2="940" y2="100" />
+              <line x1="0" y1="200" x2="940" y2="200" />
+              <line x1="0" y1="300" x2="940" y2="300" />
+              <line x1="0" y1="400" x2="940" y2="400" />
+            </g>
+
+            <!-- 상단 라벨 -->
+            <text x="470" y="50" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="14" fill="#66c0f4" text-anchor="middle" letter-spacing="3" font-weight="700">5-PHASE BATTLE STATE MACHINE</text>
+
+            <!-- 배틀 페이즈 5단계 노드 -->
+            <g stroke="#66c0f4" stroke-width="2" fill="none" stroke-opacity="0.7">
+              <line x1="170" y1="180" x2="280" y2="180" />
+              <line x1="370" y1="180" x2="430" y2="180" />
+              <line x1="520" y1="180" x2="580" y2="180" />
+              <line x1="670" y1="180" x2="730" y2="180" />
+            </g>
+
+            <g fill="#66c0f4" fill-opacity="0.7">
+              <polygon points="280,176 288,180 280,184" />
+              <polygon points="430,176 438,180 430,184" />
+              <polygon points="580,176 588,180 580,184" />
+              <polygon points="730,176 738,180 730,184" />
+            </g>
+
+            <!-- 노드 5개 -->
+            <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="11" fill="#c7d5e0" text-anchor="middle">
+              <rect x="80" y="155" width="90" height="50" rx="3" fill="#1b2838" stroke="#66c0f4" stroke-width="1.5" />
+              <text x="125" y="180">Battle</text>
+              <text x="125" y="195">Start</text>
+
+              <rect x="280" y="155" width="90" height="50" rx="3" fill="#1b2838" stroke="#66c0f4" stroke-width="1.5" />
+              <text x="325" y="180">Turn</text>
+              <text x="325" y="195">Start</text>
+
+              <rect x="430" y="155" width="90" height="50" rx="3" fill="#66c0f4" />
+              <text x="475" y="180" fill="#171a21" font-weight="700">Turn</text>
+              <text x="475" y="195" fill="#171a21" font-weight="700">Process</text>
+
+              <rect x="580" y="155" width="90" height="50" rx="3" fill="#1b2838" stroke="#66c0f4" stroke-width="1.5" />
+              <text x="625" y="180">Turn</text>
+              <text x="625" y="195">End</text>
+
+              <rect x="730" y="155" width="130" height="50" rx="3" fill="#1b2838" stroke="#66c0f4" stroke-width="1.5" />
+              <text x="795" y="180">Battle</text>
+              <text x="795" y="195">End</text>
+            </g>
+
+            <!-- 데이터 행 모티프 — 스킬 테이블 -->
+            <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="10" fill="#66c0f4" fill-opacity="0.7" letter-spacing="1">
+              <text x="80" y="290">SkillData.Table</text>
+            </g>
+            <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#c7d5e0" fill-opacity="0.6" letter-spacing="0.5">
+              <text x="80" y="315">uid       | timing             | cooltime | fValue1</text>
+              <text x="80" y="335">30000001  | TurnEnd            | 5        | 200</text>
+              <text x="80" y="350">30000005  | Spawn              | -        | 50</text>
+              <text x="80" y="365">30000010  | TeamTurnProcess    | -        | 10</text>
+              <text x="80" y="380">30000012  | TeamTurnStart      | 1        | 30</text>
+            </g>
+
+            <!-- 우측 도넛 모티프 -->
+            <g>
+              <!-- 도넛 1 -->
+              <circle cx="780" cy="350" r="38" fill="#d04848" />
+              <circle cx="780" cy="350" r="14" fill="#1b2838" />
+              <circle cx="780" cy="350" r="38" fill="none" stroke="#66c0f4" stroke-width="2" />
+              <!-- 도넛 2 (서로 충돌하는 모습) -->
+              <circle cx="690" cy="380" r="32" fill="#a4d007" />
+              <circle cx="690" cy="380" r="11" fill="#1b2838" />
+              <!-- 충돌 이펙트 -->
+              <g stroke="#ffffff" stroke-width="2" fill="none" stroke-opacity="0.8">
+                <line x1="725" y1="365" x2="735" y2="370" />
+                <line x1="730" y1="355" x2="740" y2="360" />
+                <line x1="725" y1="380" x2="735" y2="383" />
+              </g>
+            </g>
+
+            <!-- 하단 메타 -->
+            <text x="80" y="510" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="10" fill="#8f98a0" letter-spacing="1">DONUT CRASH &middot; Turn-based Physics Battle &middot; Mobile</text>
+          </svg>
+        </div>
+
+        <h3 class="project-showcase__title">Donut Crash</h3>
+        <div class="project-showcase__meta">
+          턴제 배틀 게임 · Mobile · 팀 프로젝트 · 캐주얼 · 2025
+        </div>
+
+        <div class="description-block">
+          <p class="description-block__lead">
+            <span class="kw">5장의 도넛 덱</span>을 구성하여 턴제 전투를 진행하는 물리 충돌 PvP 게임입니다.<br>
+            <span class="kw">10인 팀(기획4, 개발6)</span>로 진행된 프로젝트이고
+			<span class="kw">인게임 시스템 기획 전반을 담당</span>하며 <span class="kw">전투, UI, 밸런스, QA 프로세스를 모두</span> 관리했습니다.<br>
+			턴제 전투의 흐름을 <span class="kw">5단계 상태 머신 구조로 정의</span>하고, 속도 값을 활용한 충돌 기반 데미지 계산식을 설계하였으며<br>
+			전투 상황에 따라 전략적 변수와 결과가 발생하도록 설계하였습니다.
+          </p>
+          <p class="description-block__paragraph">
+            전투 <span class="kw">HUD, 스킬 발동, UI 팝업 구조</span> 등 플레이 흐름에 필요한 인터페이스를 기획했으며,<br>
+			<span class="kw">Figma 프로토타입</span>을 통해 실제 사용 흐름과 정보 전달 구조를 사전에 검증했습니다.<br>
+			또한 <span class="kw">Excel 기반 전투 시뮬레이터</span>와 플레이 테스트를 통해 스킬 수치와 전투 밸런스를 반복적으로 조정했습니다.
+          </p>
+          <p class="description-block__paragraph">
+            개발 과정에서 버그 재현 및 우선순위 분류, QA문서화 작업과 개발 전달 프로세스를 담당했으며,<br>
+			매일 오전 스크럼을 통해 개발 진척도와 일정 우선순위를 공유하였습니다.<br>
+			특히 인게임 담당 개발자들과 지속적인 커뮤니케이션을 통해 구현 이슈와 충돌을 빠르게 조율하여 협업하였습니다.
+          </p>
+        </div>
+
+        <!-- DC 자료 뷰어 버튼 행 — 기획서/영상/스크린샷 3가지 패널 진입점 -->
+        <div class="viewer-trigger-row">
+          <button type="button"
+                  class="viewer-trigger viewer-trigger--docs"
+                  data-project="dc"
+                  data-viewer-type="docs">
+            <svg class="viewer-trigger__icon" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M4 1.5h6.5L13 4v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1zm0 1v11h8V5h-2.5V2.5H4zm6.5 0v2H12L10.5 2.5z"/>
+            </svg>
+            기획서 열람
+          </button>
+          <button type="button"
+                  class="viewer-trigger viewer-trigger--videos"
+                  data-project="dc"
+                  data-viewer-type="videos">
+            <svg class="viewer-trigger__icon" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M3 2.5h10a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zm3 2.5v6l5-3-5-3z"/>
+            </svg>
+            플레이 영상
+          </button>
+          <button type="button"
+                  class="viewer-trigger viewer-trigger--shots"
+                  data-project="dc"
+                  data-viewer-type="shots">
+            <svg class="viewer-trigger__icon" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M2.5 3h11a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm.5 1.5v7l3-3 2 2 3-4 3 5h-11zm9-1.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
+            </svg>
+            스크린샷
+          </button>
+        </div>
+
+        <!-- DC 스크린샷 데이터 — 화면에는 비표시, viewer 가 읽어 사용 -->
+        <div class="thumbnail-strip thumbnail-strip--data" data-project="dc" hidden>
+          <!-- 썸네일 1 — 인게임 GUI 와이어프레임 -->
+          <div class="thumbnail-frame" tabindex="0" data-caption="인게임 GUI 와이어프레임">
+            <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <rect x="0" y="0" width="320" height="180" fill="#1b2838" />
+              <!-- GUI 영역 -->
+              <rect x="40" y="20" width="240" height="40" fill="#316282" fill-opacity="0.6" stroke="#66c0f4" stroke-width="1" />
+              <text x="160" y="44" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#c7d5e0" text-anchor="middle">GUI 영역 — 양 팀 프로필 / 도넛 / 데스카운트</text>
+              <!-- 필드 영역 -->
+              <rect x="40" y="65" width="240" height="100" fill="#2a475e" stroke="#66c0f4" stroke-width="1" stroke-dasharray="3,2" />
+              <text x="160" y="85" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#66c0f4" text-anchor="middle">필드 UI 영역</text>
+              <!-- 도넛들 -->
+              <circle cx="70" cy="115" r="9" fill="#d04848" />
+              <circle cx="110" cy="135" r="9" fill="#d04848" />
+              <circle cx="90" cy="150" r="9" fill="#d04848" />
+              <circle cx="240" cy="115" r="9" fill="#a4d007" />
+              <circle cx="220" cy="135" r="9" fill="#a4d007" />
+              <circle cx="250" cy="150" r="9" fill="#a4d007" />
+            </svg>
+          </div>
+
+          <!-- 썸네일 2 — 스킬 명세서 표 -->
+          <div class="thumbnail-frame" tabindex="0" data-caption="스킬 명세서 표">
+            <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <rect x="0" y="0" width="320" height="180" fill="#1b2838" />
+              <!-- 표 헤더 -->
+              <rect x="20" y="25" width="280" height="18" fill="#316282" />
+              <text x="30" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#ffffff" font-weight="700">항목</text>
+              <text x="120" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#ffffff" font-weight="700">내용</text>
+              <!-- 표 행들 -->
+              <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="8" fill="#c7d5e0">
+                <rect x="20" y="43" width="280" height="14" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="30" y="53">적용 대상</text>
+                <text x="120" y="53">자기 자신, 적 도넛</text>
+                <rect x="20" y="57" width="280" height="14" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="30" y="67">트리거 조건</text>
+                <text x="120" y="67">매 TurnEnd</text>
+                <rect x="20" y="71" width="280" height="14" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="30" y="81">지속 조건</text>
+                <text x="120" y="81">사망 즉시 해제</text>
+                <rect x="20" y="85" width="280" height="14" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="30" y="95">발동 방식</text>
+                <text x="120" y="95">자동</text>
+                <rect x="20" y="99" width="280" height="14" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="30" y="109">중첩 여부</text>
+                <text x="120" y="109">최대 5회</text>
+              </g>
+              <text x="160" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#66c0f4" text-anchor="middle">SKILL #1 — 헬즈 도어</text>
+            </svg>
+          </div>
+
+          <!-- 썸네일 3 — 데미지 계산식 시각화 -->
+          <div class="thumbnail-frame" tabindex="0" data-caption="데미지 계산식 시각화">
+            <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <rect x="0" y="0" width="320" height="180" fill="#1b2838" />
+              <!-- 공식 박스 -->
+              <rect x="20" y="40" width="280" height="60" fill="#2a475e" stroke="#66c0f4" stroke-width="1" />
+              <text x="160" y="65" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#ffffff" text-anchor="middle" font-weight="700">DMG = AD × Doughnut.SPD</text>
+              <text x="160" y="85" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#66c0f4" text-anchor="middle">AD = ATK_total - DEF_total</text>
+              <!-- SPD 곡선 -->
+              <line x1="40" y1="160" x2="280" y2="160" stroke="#8f98a0" stroke-width="1" />
+              <line x1="40" y1="115" x2="40" y2="160" stroke="#8f98a0" stroke-width="1" />
+              <polyline points="40,160 80,160 200,118 280,115" stroke="#a4d007" stroke-width="2" fill="none" />
+              <text x="40" y="175" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="7" fill="#8f98a0">min</text>
+              <text x="277" y="175" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="7" fill="#8f98a0" text-anchor="end">max</text>
+              <text x="160" y="20" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="10" fill="#66c0f4" text-anchor="middle" letter-spacing="2">DAMAGE FORMULA</text>
+              <text x="20" y="125" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="7" fill="#8f98a0">SPD</text>
+            </svg>
+          </div>
+
+          <!-- 썸네일 4 — 도넛 데이터 테이블 -->
+          <div class="thumbnail-frame" tabindex="0" data-caption="도넛 데이터 테이블">
+            <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <rect x="0" y="0" width="320" height="180" fill="#1b2838" />
+              <!-- 헤더 -->
+              <rect x="10" y="20" width="300" height="14" fill="#316282" />
+              <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="7" fill="#ffffff">
+                <text x="18" y="30">id</text>
+                <text x="60" y="30">name</text>
+                <text x="135" y="30">tier</text>
+                <text x="160" y="30">atk</text>
+                <text x="185" y="30">hp</text>
+                <text x="210" y="30">def</text>
+                <text x="235" y="30">crit</text>
+                <text x="270" y="30">mass</text>
+              </g>
+              <!-- 행들 -->
+              <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="7" fill="#c7d5e0">
+                <rect x="10" y="34" width="300" height="13" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="18" y="44">0001</text>
+                <text x="60" y="44">필링 도넛</text>
+                <text x="135" y="44" fill="#67c1f5">T1</text>
+                <text x="160" y="44">36</text>
+                <text x="185" y="44">50</text>
+                <text x="210" y="44">12</text>
+                <text x="235" y="44">0.15</text>
+                <text x="270" y="44">0.75</text>
+
+                <rect x="10" y="47" width="300" height="13" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="18" y="57">0002</text>
+                <text x="60" y="57">초코 도넛</text>
+                <text x="135" y="57" fill="#67c1f5">T1</text>
+                <text x="160" y="57">32</text>
+                <text x="185" y="57">57</text>
+                <text x="210" y="57">12</text>
+                <text x="235" y="57">0.10</text>
+                <text x="270" y="57">0.90</text>
+
+                <rect x="10" y="60" width="300" height="13" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="18" y="70">0006</text>
+                <text x="60" y="70">크림 도넛</text>
+                <text x="135" y="70" fill="#67c1f5">T2</text>
+                <text x="160" y="70">37</text>
+                <text x="185" y="70">95</text>
+                <text x="210" y="70">15</text>
+                <text x="235" y="70">0.11</text>
+                <text x="270" y="70">1.05</text>
+
+                <rect x="10" y="73" width="300" height="13" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="18" y="83">0011</text>
+                <text x="60" y="83">블루베리 크림</text>
+                <text x="135" y="83" fill="#67c1f5">T3</text>
+                <text x="160" y="83">48</text>
+                <text x="185" y="83">143</text>
+                <text x="210" y="83">31</text>
+                <text x="235" y="83">0.13</text>
+                <text x="270" y="83">1.10</text>
+
+                <rect x="10" y="86" width="300" height="13" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="18" y="96">0014</text>
+                <text x="60" y="96">화이트 초코 필링</text>
+                <text x="135" y="96" fill="#67c1f5">T3</text>
+                <text x="160" y="96">48</text>
+                <text x="185" y="96">119</text>
+                <text x="210" y="96">35</text>
+                <text x="235" y="96">0.13</text>
+                <text x="270" y="96">1.10</text>
+              </g>
+              <text x="160" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#66c0f4" text-anchor="middle">DONUT DATA TABLE — 16 rows</text>
+            </svg>
+          </div>
+        </div>
+
+        <!-- DC 핵심 기능 태그 -->
+        <div class="subsection-label">Design Highlights</div>
+        <div class="tag-cluster">
+          <span class="tag-pill">5단계 배틀 페이즈</span>
+          <span class="tag-pill">상태 머신 정의</span>
+          <span class="tag-pill">12개 도넛 스킬 명세</span>
+          <span class="tag-pill">7개 마녀 패시브</span>
+          <span class="tag-pill">통일 명세 포맷</span>
+          <span class="tag-pill">데이터 테이블 구조화</span>
+          <span class="tag-pill">데미지 계산식</span>
+          <span class="tag-pill">속도 정규화 SPD</span>
+          <span class="tag-pill">크리티컬 시스템</span>
+          <span class="tag-pill">인게임 UI 흐름</span>
+          <span class="tag-pill">팝업 안전장치</span>
+          <span class="tag-pill">예외처리 표준화</span>
+        </div>
+
+        <!-- DC 시스템 정보 -->
+        <div class="subsection-label" style="margin-top: var(--space-lg);">System Info</div>
+        <div class="system-info-table">
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">장르</div>
+            <div class="system-info-table__value">턴제 물리 충돌 PvP / 캐주얼 액션</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">플랫폼</div>
+            <div class="system-info-table__value">모바일 (Android · iOS, 320×568 기준해상도)</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">팀 구성</div>
+            <div class="system-info-table__value">기획 4인 · 개발 6인 (10인 팀 프로젝트)</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">담당 역할</div>
+            <div class="system-info-table__value">인게임(전투) 시스템 기획 + UI 기획 + 밸런스 + QA (스킬 시스템 명세 + 데미지 계산식 설계 포함)</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">사용 도구</div>
+            <div class="system-info-table__value">Notion (시스템 명세) · Figma (UI 프로토타입) · Excel (밸런스 시뮬레이션)</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">개발 기간</div>
+            <div class="system-info-table__value">2025.10 ~ 2025.11 (인게임 시스템 기획 단계)</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">기획 산출물</div>
+            <div class="system-info-table__value">전투 시스템 기획서 · 스킬 시스템 기획서 · 인게임 UI 기획서 · 데미지 계산식 문서</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">프로토타입 / 링크</div>
+            <div class="system-info-table__value">추후 추가 예정</div>
+          </div>
+        </div>
+
+      </div>
+      <!-- ----- DC 패널 끝 ----- -->
+
+      <!-- ----- PROJECT 3 · 생쥐 대탈출 패널 ----- -->
+      <div class="project-showcase project-panel"
+           id="mouse-detail"
+           role="tabpanel"
+           aria-labelledby="mouse-tab"
+           tabindex="0">
+
+        <!-- 생쥐대탈출 캡슐 — UI 흐름도 + 경제 루프 모티프 -->
+        <div class="project-showcase__hero">
+          <svg viewBox="0 0 940 529" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+            <defs>
+              <linearGradient id="mouseBg" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#2a475e" />
+                <stop offset="100%" stop-color="#1b2838" />
+              </linearGradient>
+            </defs>
+            <rect x="0" y="0" width="940" height="529" fill="url(#mouseBg)" />
+
+            <!-- 상단 라벨 -->
+            <text x="470" y="50" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="14" fill="#66c0f4" text-anchor="middle" letter-spacing="3" font-weight="700">UI FLOW &middot; ECONOMY LOOP DESIGN</text>
+
+            <!-- UI 흐름도 — 9개 페이지 노드 -->
+            <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#c7d5e0" text-anchor="middle">
+              <!-- 메인 페이지 (중앙, 강조) -->
+              <rect x="380" y="220" width="180" height="80" rx="3" fill="#66c0f4" />
+              <text x="470" y="252" fill="#171a21" font-weight="700" font-size="13">메인 페이지</text>
+              <text x="470" y="270" fill="#171a21" font-size="9">터치 → 재화 획득</text>
+              <text x="470" y="284" fill="#171a21" font-size="9">초당 자동 생산</text>
+
+              <!-- 6개 팝업 (주변) -->
+              <rect x="80" y="120" width="120" height="50" rx="3" fill="#1b2838" stroke="#66c0f4" stroke-width="1.2" />
+              <text x="140" y="142">캐릭터 업그레이드</text>
+              <text x="140" y="156" fill="#8f98a0" font-size="8">2-A</text>
+
+              <rect x="220" y="80" width="120" height="50" rx="3" fill="#1b2838" stroke="#66c0f4" stroke-width="1.2" />
+              <text x="280" y="102">서브 캐릭터 해금</text>
+              <text x="280" y="116" fill="#8f98a0" font-size="8">2-B</text>
+
+              <rect x="380" y="80" width="120" height="50" rx="3" fill="#1b2838" stroke="#66c0f4" stroke-width="1.2" />
+              <text x="440" y="102">연구소</text>
+              <text x="440" y="116" fill="#8f98a0" font-size="8">2-C</text>
+
+              <rect x="540" y="80" width="120" height="50" rx="3" fill="#1b2838" stroke="#66c0f4" stroke-width="1.2" />
+              <text x="600" y="102">장소 해금/이동</text>
+              <text x="600" y="116" fill="#8f98a0" font-size="8">2-D</text>
+
+              <rect x="700" y="120" width="120" height="50" rx="3" fill="#1b2838" stroke="#66c0f4" stroke-width="1.2" />
+              <text x="760" y="142">기념품 상점</text>
+              <text x="760" y="156" fill="#8f98a0" font-size="8">2-E</text>
+
+              <rect x="700" y="350" width="120" height="50" rx="3" fill="#1b2838" stroke="#66c0f4" stroke-width="1.2" />
+              <text x="760" y="372">상점 (유료)</text>
+              <text x="760" y="386" fill="#8f98a0" font-size="8">2-F</text>
+
+              <rect x="380" y="380" width="120" height="50" rx="3" fill="#1b2838" stroke="#66c0f4" stroke-width="1.2" />
+              <text x="440" y="402">환경 설정</text>
+              <text x="440" y="416" fill="#8f98a0" font-size="8">3</text>
+            </g>
+
+            <!-- 흐름 화살표들 -->
+            <g stroke="#66c0f4" stroke-width="1.5" fill="none" stroke-opacity="0.5">
+              <line x1="200" y1="160" x2="380" y2="230" />
+              <line x1="280" y1="130" x2="410" y2="220" />
+              <line x1="440" y1="130" x2="465" y2="220" />
+              <line x1="600" y1="130" x2="500" y2="220" />
+              <line x1="700" y1="160" x2="555" y2="235" />
+              <line x1="700" y1="370" x2="560" y2="290" />
+              <line x1="440" y1="380" x2="465" y2="300" />
+            </g>
+
+            <!-- 하단 메타 -->
+            <text x="80" y="510" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="10" fill="#8f98a0" letter-spacing="1">생쥐 대탈출! &middot; Idle / Tap-to-Earn &middot; Mobile</text>
+          </svg>
+        </div>
+
+        <h3 class="project-showcase__title">생쥐 대탈출!</h3>
+        <div class="project-showcase__meta">
+          방치형 클리커 · Mobile · 팀 프로젝트 · 2025
+        </div>
+
+        <div class="description-block">
+          <p class="description-block__lead">
+            <span class="kw">터치 한 번으로 재화를 누적하고, 그 재화로 다음 목표를 해금</span>하는 방치형 모바일 게임의
+            기본 플레이 시스템과 UI 흐름 설계를 담당했습니다.
+            <span class="kw">기획 1인(본인) · 개발 1인의 2인 팀 프로젝트</span>입니다.
+            메인 페이지 한 화면에 <span class="kw">9개의 팝업</span>이 연결되도록 설계했고,
+            각 팝업의 활성화 조건·내부 구조·확장성을 픽셀 단위(412×917)로 명세했습니다.
+          </p>
+          <p class="description-block__paragraph">
+            방치형 게임의 핵심은 <span class="kw">"플레이하지 않는 시간에도 자산이 늘어나는 감각"</span>이라고 정의했습니다.
+            이를 위해 1초마다 발동하는 자동 생산 로직, 0.1초 쿨타임 안전장치,
+            앱 강제 종료 시 자동 저장, 재접속 시 오프라인 수익 계산까지 — 시스템의 빈 칸을 표로 메워두었습니다.
+          </p>
+          <p class="description-block__paragraph">
+            장기 플레이가 가능하도록 재화의 생성·소모 구조를 <span class="kw">연구소 트리</span>와
+            <span class="kw">기념품 수집</span>으로 다각화하고, 적절한 시점에 발생하는 성장 둔화 구간을
+            <span class="kw">광고 시청 보상</span>과 결합해 자연스러운 수익 모델을 구축했습니다.
+          </p>
+        </div>
+
+        <!-- 생쥐대탈출 자료 뷰어 버튼 행 — 기획서/영상/스크린샷 3가지 패널 진입점 -->
+        <div class="viewer-trigger-row">
+          <button type="button"
+                  class="viewer-trigger viewer-trigger--docs"
+                  data-project="mouse"
+                  data-viewer-type="docs">
+            <svg class="viewer-trigger__icon" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M4 1.5h6.5L13 4v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1zm0 1v11h8V5h-2.5V2.5H4zm6.5 0v2H12L10.5 2.5z"/>
+            </svg>
+            기획서 열람
+          </button>
+          <button type="button"
+                  class="viewer-trigger viewer-trigger--videos"
+                  data-project="mouse"
+                  data-viewer-type="videos">
+            <svg class="viewer-trigger__icon" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M3 2.5h10a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zm3 2.5v6l5-3-5-3z"/>
+            </svg>
+            플레이 영상
+          </button>
+          <button type="button"
+                  class="viewer-trigger viewer-trigger--shots"
+                  data-project="mouse"
+                  data-viewer-type="shots">
+            <svg class="viewer-trigger__icon" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M2.5 3h11a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm.5 1.5v7l3-3 2 2 3-4 3 5h-11zm9-1.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
+            </svg>
+            스크린샷
+          </button>
+        </div>
+
+        <!-- 생쥐대탈출 스크린샷 데이터 — 화면에는 비표시, viewer 가 읽어 사용 -->
+        <div class="thumbnail-strip thumbnail-strip--data" data-project="mouse" hidden>
+          <!-- 썸네일 1 — 메인 페이지 모킹업 -->
+          <div class="thumbnail-frame" tabindex="0" data-caption="메인 페이지 모킹업">
+            <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <rect x="0" y="0" width="320" height="180" fill="#1b2838" />
+              <!-- 모바일 프레임 -->
+              <rect x="100" y="15" width="120" height="155" rx="6" fill="#2a475e" stroke="#66c0f4" stroke-width="1" />
+              <!-- 상단 재화 UI -->
+              <rect x="106" y="22" width="50" height="14" fill="#316282" stroke="#66c0f4" stroke-width="0.5" />
+              <text x="131" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="6" fill="#a4d007" text-anchor="middle">🧀 1.2K</text>
+              <rect x="164" y="22" width="50" height="14" fill="#316282" stroke="#66c0f4" stroke-width="0.5" />
+              <text x="189" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="6" fill="#66c0f4" text-anchor="middle">+12/tap</text>
+              <!-- 메인 영역 — 캐릭터 자리 -->
+              <circle cx="160" cy="90" r="18" fill="#c7d5e0" />
+              <circle cx="155" cy="86" r="2" fill="#171a21" />
+              <circle cx="165" cy="86" r="2" fill="#171a21" />
+              <!-- 하단 메뉴 6개 -->
+              <g>
+                <rect x="106" y="120" width="32" height="22" fill="#316282" stroke="#66c0f4" stroke-width="0.5" />
+                <rect x="142" y="120" width="32" height="22" fill="#316282" stroke="#66c0f4" stroke-width="0.5" />
+                <rect x="178" y="120" width="32" height="22" fill="#316282" stroke="#66c0f4" stroke-width="0.5" />
+                <rect x="106" y="145" width="32" height="22" fill="#316282" stroke="#66c0f4" stroke-width="0.5" />
+                <rect x="142" y="145" width="32" height="22" fill="#316282" stroke="#66c0f4" stroke-width="0.5" />
+                <rect x="178" y="145" width="32" height="22" fill="#316282" stroke="#66c0f4" stroke-width="0.5" />
+              </g>
+              <!-- 라벨 -->
+              <text x="20" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#66c0f4" letter-spacing="1">412 × 917</text>
+              <text x="20" y="115" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="7" fill="#8f98a0">Android</text>
+              <text x="20" y="125" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="7" fill="#8f98a0">Compact</text>
+            </svg>
+          </div>
+
+          <!-- 썸네일 2 — UI 흐름도 -->
+          <div class="thumbnail-frame" tabindex="0" data-caption="UI 흐름도">
+            <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <rect x="0" y="0" width="320" height="180" fill="#1b2838" />
+              <!-- 중앙 메인 -->
+              <rect x="125" y="75" width="70" height="30" rx="2" fill="#66c0f4" />
+              <text x="160" y="94" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#171a21" text-anchor="middle" font-weight="700">메인</text>
+              <!-- 주변 노드 6개 -->
+              <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="7" fill="#c7d5e0" text-anchor="middle">
+                <rect x="20" y="40" width="55" height="20" rx="2" fill="#2a475e" stroke="#66c0f4" stroke-width="0.7" />
+                <text x="47" y="53">캐릭터</text>
+                <rect x="100" y="20" width="55" height="20" rx="2" fill="#2a475e" stroke="#66c0f4" stroke-width="0.7" />
+                <text x="127" y="33">서브</text>
+                <rect x="165" y="20" width="55" height="20" rx="2" fill="#2a475e" stroke="#66c0f4" stroke-width="0.7" />
+                <text x="192" y="33">연구소</text>
+                <rect x="245" y="40" width="55" height="20" rx="2" fill="#2a475e" stroke="#66c0f4" stroke-width="0.7" />
+                <text x="272" y="53">장소</text>
+                <rect x="245" y="120" width="55" height="20" rx="2" fill="#2a475e" stroke="#66c0f4" stroke-width="0.7" />
+                <text x="272" y="133">기념품</text>
+                <rect x="100" y="140" width="55" height="20" rx="2" fill="#2a475e" stroke="#66c0f4" stroke-width="0.7" />
+                <text x="127" y="153">상점</text>
+                <rect x="165" y="140" width="55" height="20" rx="2" fill="#2a475e" stroke="#66c0f4" stroke-width="0.7" />
+                <text x="192" y="153">설정</text>
+              </g>
+              <!-- 연결선 -->
+              <g stroke="#66c0f4" stroke-width="0.7" stroke-opacity="0.5" fill="none">
+                <line x1="75" y1="55" x2="125" y2="80" />
+                <line x1="127" y1="40" x2="140" y2="75" />
+                <line x1="192" y1="40" x2="180" y2="75" />
+                <line x1="245" y1="55" x2="195" y2="80" />
+                <line x1="245" y1="130" x2="195" y2="100" />
+                <line x1="127" y1="140" x2="140" y2="105" />
+                <line x1="192" y1="140" x2="180" y2="105" />
+              </g>
+            </svg>
+          </div>
+
+          <!-- 썸네일 3 — 경제 루프 다이어그램 -->
+          <div class="thumbnail-frame" tabindex="0" data-caption="경제 루프 다이어그램">
+            <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <rect x="0" y="0" width="320" height="180" fill="#1b2838" />
+              <text x="160" y="22" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="10" fill="#66c0f4" text-anchor="middle" letter-spacing="2">ECONOMY LOOP</text>
+              <!-- 4단계 순환 -->
+              <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="8" fill="#c7d5e0" text-anchor="middle">
+                <circle cx="80" cy="80" r="26" fill="#2a475e" stroke="#a4d007" stroke-width="1.5" />
+                <text x="80" y="78">터치</text>
+                <text x="80" y="90" font-size="6" fill="#8f98a0">획득</text>
+
+                <circle cx="240" cy="80" r="26" fill="#2a475e" stroke="#66c0f4" stroke-width="1.5" />
+                <text x="240" y="78">업그레이드</text>
+                <text x="240" y="90" font-size="6" fill="#8f98a0">소모</text>
+
+                <circle cx="240" cy="145" r="26" fill="#2a475e" stroke="#66c0f4" stroke-width="1.5" />
+                <text x="240" y="143">생산력</text>
+                <text x="240" y="155" font-size="6" fill="#8f98a0">증가</text>
+
+                <circle cx="80" cy="145" r="26" fill="#2a475e" stroke="#a4d007" stroke-width="1.5" />
+                <text x="80" y="143">초당</text>
+                <text x="80" y="155" font-size="6" fill="#8f98a0">생성</text>
+              </g>
+              <!-- 화살표 -->
+              <g stroke="#66c0f4" stroke-width="1" fill="none" stroke-opacity="0.6">
+                <path d="M 110 80 L 210 80" />
+                <path d="M 240 110 L 240 115" />
+                <path d="M 210 145 L 110 145" />
+                <path d="M 80 115 L 80 110" />
+              </g>
+              <g fill="#66c0f4" fill-opacity="0.6">
+                <polygon points="210,76 218,80 210,84" />
+                <polygon points="236,115 240,123 244,115" />
+                <polygon points="110,141 102,145 110,149" />
+                <polygon points="76,110 80,102 84,110" />
+              </g>
+            </svg>
+          </div>
+
+          <!-- 썸네일 4 — 팝업 명세 디테일 -->
+          <div class="thumbnail-frame" tabindex="0" data-caption="팝업 명세 디테일">
+            <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <rect x="0" y="0" width="320" height="180" fill="#1b2838" />
+              <!-- 팝업 미리보기 -->
+              <rect x="50" y="25" width="220" height="135" rx="3" fill="#2a475e" stroke="#66c0f4" stroke-width="1" />
+              <!-- 팝업 헤더 -->
+              <rect x="50" y="25" width="220" height="22" fill="#316282" />
+              <text x="160" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle" font-weight="700">캐릭터 업그레이드</text>
+              <circle cx="258" cy="36" r="5" fill="#1b2838" stroke="#66c0f4" stroke-width="0.5" />
+              <text x="258" y="39" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="6" fill="#c7d5e0" text-anchor="middle">×</text>
+              <!-- 캐릭터 카드 -->
+              <rect x="60" y="55" width="200" height="50" fill="#1b2838" stroke="#66c0f4" stroke-width="0.5" />
+              <circle cx="80" cy="80" r="14" fill="#c7d5e0" />
+              <text x="105" y="72" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="8" fill="#ffffff">메인 캐릭터</text>
+              <text x="105" y="84" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="7" fill="#8f98a0">레벨 12 → 13</text>
+              <text x="105" y="96" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="7" fill="#a4d007">+15 / tap</text>
+              <!-- 업그레이드 버튼 -->
+              <rect x="190" y="115" width="65" height="22" rx="2" fill="#5c7e10" />
+              <text x="222" y="129" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="8" fill="#ffffff" text-anchor="middle">업그레이드</text>
+              <text x="60" y="129" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="7" fill="#8f98a0">소모: 🧀 2,400</text>
+              <!-- 라벨 -->
+              <text x="160" y="175" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="8" fill="#66c0f4" text-anchor="middle">POPUP 2-A SPEC</text>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 생쥐대탈출 핵심 기능 태그 -->
+        <div class="subsection-label">Design Highlights</div>
+        <div class="tag-cluster">
+          <span class="tag-pill">UI 흐름도 설계</span>
+          <span class="tag-pill">9개 팝업 명세</span>
+          <span class="tag-pill">픽셀 단위 좌표 정의</span>
+          <span class="tag-pill">방치형 생산 로직</span>
+          <span class="tag-pill">오프라인 수익 계산</span>
+          <span class="tag-pill">재화 경제 구조</span>
+          <span class="tag-pill">연구소 성장 트리</span>
+          <span class="tag-pill">기념품 수집 루프</span>
+          <span class="tag-pill">광고 보상 모델</span>
+          <span class="tag-pill">자동 저장 시스템</span>
+          <span class="tag-pill">입력 안전장치</span>
+        </div>
+
+        <!-- 생쥐대탈출 시스템 정보 -->
+        <div class="subsection-label" style="margin-top: var(--space-lg);">System Info</div>
+        <div class="system-info-table">
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">장르</div>
+            <div class="system-info-table__value">방치형 / Tap-to-Earn / 캐주얼</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">플랫폼</div>
+            <div class="system-info-table__value">모바일 (Android Compact 412×917 기준)</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">팀 구성</div>
+            <div class="system-info-table__value">기획 1인 (본인) · 개발 1인 (2인 팀 프로젝트)</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">담당 역할</div>
+            <div class="system-info-table__value">기본 플레이 시스템 + UI 흐름 설계 + 재화 경제 구조 + 광고 수익 모델 연동</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">사용 도구</div>
+            <div class="system-info-table__value">Notion (시스템 명세) · Figma (UI 모킹업) · Excel (경제 시뮬레이션)</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">개발 기간</div>
+            <div class="system-info-table__value">2025 (시스템 기획 단계)</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">기획 산출물</div>
+            <div class="system-info-table__value">기본 플레이 기획서 · UI 기획서 (9개 팝업 전체 명세)</div>
+          </div>
+          <div class="system-info-table__row">
+            <div class="system-info-table__label">프로토타입 / 링크</div>
+            <div class="system-info-table__value">추후 추가 예정</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+
+  <!-- ============================================================
+       MORE LIKE THIS — 다른 작업물 / 산출물 4-up 그리드
+       각 카드는 위 본문에서 다루지 않은 보조 산출물·관심 영역 표시
+       ============================================================ -->
+  <div class="content-column" id="more">
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-header__title">More from this designer</h2>
+      </div>
+
+      <div class="more-like-this-grid">
+        <!-- 카드 1 — 데미지 시뮬레이터 -->
+        <div class="capsule-card" tabindex="0">
+          <div class="capsule-card__art">
+            <svg viewBox="0 0 467 181" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <rect x="0" y="0" width="467" height="181" fill="#1b2838" />
+              <!-- 표 모티프 -->
+              <rect x="20" y="20" width="200" height="14" fill="#316282" />
+              <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#c7d5e0">
+                <text x="28" y="30" font-weight="700">도넛 A</text>
+                <text x="130" y="30" font-weight="700">도넛 B</text>
+                <rect x="20" y="34" width="200" height="13" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="28" y="44">크림</text>
+                <text x="130" y="44">초코</text>
+                <rect x="20" y="47" width="200" height="13" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="28" y="57">ATK 37</text>
+                <text x="130" y="57">DEF 12</text>
+                <rect x="20" y="60" width="200" height="13" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="28" y="70">SPD 0.8</text>
+                <text x="130" y="70">DMG 20</text>
+              </g>
+              <!-- 결과 표시 -->
+              <rect x="240" y="34" width="207" height="120" fill="#2a475e" stroke="#66c0f4" stroke-width="1" />
+              <text x="343" y="60" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="11" fill="#a4d007" text-anchor="middle" font-weight="700">3턴 처치</text>
+              <text x="343" y="80" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#66c0f4" text-anchor="middle">1회: -20 HP</text>
+              <text x="343" y="95" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#66c0f4" text-anchor="middle">2회: -22 HP</text>
+              <text x="343" y="110" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#66c0f4" text-anchor="middle">3회: -28 HP (CRIT)</text>
+              <text x="343" y="135" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#c7d5e0" text-anchor="middle">총 70 / HP 65 ✓</text>
+            </svg>
+          </div>
+          <div class="capsule-card__body">
+            <div class="capsule-card__title">데미지 시뮬레이터</div>
+            <div class="capsule-card__subtitle">Excel · VBA · 도넛 vs 도넛 처치 턴 수 계산</div>
+          </div>
+        </div>
+
+        <!-- 카드 2 — 도넛 데이터 테이블 -->
+        <div class="capsule-card" tabindex="0">
+          <div class="capsule-card__art">
+            <svg viewBox="0 0 467 181" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <rect x="0" y="0" width="467" height="181" fill="#1b2838" />
+              <rect x="10" y="20" width="447" height="14" fill="#316282" />
+              <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="8" fill="#ffffff">
+                <text x="20" y="30">id</text>
+                <text x="60" y="30">name</text>
+                <text x="200" y="30">tier</text>
+                <text x="240" y="30">atk</text>
+                <text x="280" y="30">hp</text>
+                <text x="320" y="30">def</text>
+                <text x="360" y="30">crit</text>
+                <text x="410" y="30">mass</text>
+              </g>
+              <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="8" fill="#c7d5e0">
+                <rect x="10" y="34" width="447" height="13" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="20" y="44">0001</text><text x="60" y="44">필링 도넛</text><text x="200" y="44" fill="#67c1f5">T1</text><text x="240" y="44">36</text><text x="280" y="44">50</text>
+                <rect x="10" y="47" width="447" height="13" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="20" y="57">0006</text><text x="60" y="57">크림 도넛</text><text x="200" y="57" fill="#67c1f5">T2</text><text x="240" y="57">37</text><text x="280" y="57">95</text>
+                <rect x="10" y="60" width="447" height="13" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="20" y="70">0011</text><text x="60" y="70">블루베리 크림</text><text x="200" y="70" fill="#67c1f5">T3</text><text x="240" y="70">48</text><text x="280" y="70">143</text>
+                <rect x="10" y="73" width="447" height="13" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="20" y="83">0014</text><text x="60" y="83">화이트 초코 필링</text><text x="200" y="83" fill="#67c1f5">T3</text><text x="240" y="83">48</text><text x="280" y="83">119</text>
+                <rect x="10" y="86" width="447" height="13" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="20" y="96">0015</text><text x="60" y="96">다크 초코 스타</text><text x="200" y="96" fill="#67c1f5">T3</text><text x="240" y="96">49</text><text x="280" y="96">122</text>
+              </g>
+              <text x="234" y="155" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#66c0f4" text-anchor="middle">16-row Schema · 11 columns</text>
+            </svg>
+          </div>
+          <div class="capsule-card__body">
+            <div class="capsule-card__title">도넛 데이터 테이블</div>
+            <div class="capsule-card__subtitle">스키마 설계 · 16개 도넛 × 11개 컬럼</div>
+          </div>
+        </div>
+
+        <!-- 카드 3 — 스킬 시스템 명세 템플릿 -->
+        <div class="capsule-card" tabindex="0">
+          <div class="capsule-card__art">
+            <svg viewBox="0 0 467 181" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <rect x="0" y="0" width="467" height="181" fill="#1b2838" />
+              <text x="234" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="11" fill="#66c0f4" text-anchor="middle" letter-spacing="2" font-weight="700">UNIFIED SKILL SPEC</text>
+              <!-- 6항목 표 -->
+              <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="9" fill="#c7d5e0">
+                <rect x="40" y="42" width="387" height="16" fill="#316282" />
+                <text x="50" y="54" fill="#ffffff" font-weight="700">항목</text>
+                <text x="200" y="54" fill="#ffffff" font-weight="700">내용</text>
+                <rect x="40" y="58" width="387" height="14" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="50" y="68">적용 대상</text>
+                <rect x="40" y="72" width="387" height="14" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="50" y="82">트리거 조건</text>
+                <rect x="40" y="86" width="387" height="14" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="50" y="96">지속 조건</text>
+                <rect x="40" y="100" width="387" height="14" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="50" y="110">발동 방식</text>
+                <rect x="40" y="114" width="387" height="14" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="50" y="124">중첩 여부</text>
+                <rect x="40" y="128" width="387" height="14" fill="#2a475e" stroke="#000000" stroke-opacity="0.3" />
+                <text x="50" y="138">예외처리</text>
+              </g>
+              <text x="234" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="8" fill="#a4d007" text-anchor="middle">19 skills × 6 fields = 0 inconsistency</text>
+            </svg>
+          </div>
+          <div class="capsule-card__body">
+            <div class="capsule-card__title">스킬 명세 표준 템플릿</div>
+            <div class="capsule-card__subtitle">6항목 표 포맷 · 19개 스킬 통일 적용</div>
+          </div>
+        </div>
+
+        <!-- 카드 4 — 웨이브 밸런스 곡선 -->
+        <div class="capsule-card" tabindex="0">
+          <div class="capsule-card__art">
+            <svg viewBox="0 0 467 181" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <rect x="0" y="0" width="467" height="181" fill="#1b2838" />
+              <text x="234" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="11" fill="#66c0f4" text-anchor="middle" letter-spacing="2" font-weight="700">WAVE DIFFICULTY CURVE</text>
+              <!-- 그래프 -->
+              <line x1="40" y1="50" x2="40" y2="155" stroke="#8f98a0" stroke-width="1" />
+              <line x1="40" y1="155" x2="430" y2="155" stroke="#8f98a0" stroke-width="1" />
+              <g stroke="#8f98a0" stroke-opacity="0.15" stroke-width="0.5">
+                <line x1="40" y1="120" x2="430" y2="120" />
+                <line x1="40" y1="90" x2="430" y2="90" />
+                <line x1="40" y1="60" x2="430" y2="60" />
+              </g>
+              <!-- 기본 -->
+              <polyline points="40,150 60,144 80,138 100,131 120,123 140,114 160,104 180,93 200,82 220,75 240,68 260,62 280,57 300,53 320,50 340,48 360,46 380,45 400,44 420,43"
+                        stroke="#66c0f4" stroke-width="2" fill="none" />
+              <!-- 라이트닝 -->
+              <polyline points="40,148 60,140 80,130 100,118 120,103 140,86 160,67 180,52 200,42 220,35 240,30 260,27 280,25 300,23 320,21 340,20 360,19 380,18 400,17 420,16"
+                        stroke="#a4d007" stroke-width="2" fill="none" stroke-dasharray="3,2" />
+              <text x="50" y="170" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="7" fill="#8f98a0">Wave 1</text>
+              <text x="420" y="170" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="7" fill="#8f98a0" text-anchor="end">Wave 20</text>
+              <text x="50" y="58" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="7" fill="#8f98a0">HP</text>
+            </svg>
+          </div>
+          <div class="capsule-card__body">
+            <div class="capsule-card__title">웨이브 밸런스 곡선</div>
+            <div class="capsule-card__subtitle">Excel 시뮬레이션 · 51 웨이브 HP·골드 곡선</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+</div><!-- /.body-wrapper -->
+
+<!-- ============================================================
+     FOOTER BAND — 페이지 하단 연락처/카피라이트
+     좌측 시안 링크 클러스터, 우측 카피라이트
+     ============================================================ -->
+<footer class="footer-band" id="contact">
+  <div class="footer-band__container">
+    <div class="footer-band__contact">
+      <a href="mailto:koioas1@gmail.com">koioas1@gmail.com</a>
+      <a href="tel:+821098908719">010-9890-8719</a>
+      <a href="#" aria-label="포트폴리오 링크 (추후 추가)">Portfolio →</a>
+    </div>
+    <div class="footer-band__copyright">
+      © 2026 서윤준 · System &amp; Level Designer Portfolio · All rights reserved.
+    </div>
+  </div>
+</footer>
+
+<!-- ============================================================
+     LIGHTBOX — 이미지 확대 오버레이
+     단일 인스턴스, JS가 클릭된 썸네일의 콘텐츠를 복제해 넣음
+     이미지 외부(.lightbox 자체) 클릭 또는 닫기 버튼 또는 ESC 로 닫음
+     ============================================================ -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="이미지 확대">
+  <div class="lightbox__inner" id="lightbox-inner">
+    <button type="button" class="lightbox__close" id="lightbox-close" aria-label="닫기">×</button>
+    <div class="lightbox__media" id="lightbox-media"></div>
+    <div class="lightbox__caption" id="lightbox-caption"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DOC VIEWER — 자료 열람 오버레이 (기획서/영상/스크린샷 공용)
+     단일 인스턴스, JS가 호출 시점에 type/project 에 따라 콘텐츠 채움
+     외부 영역 클릭 / X 버튼 클릭 / ESC 키로 닫음 — 라이트박스와 동일 패턴
+     ============================================================ -->
+<div class="doc-viewer" id="doc-viewer" role="dialog" aria-modal="true" aria-labelledby="doc-viewer-title">
+  <div class="doc-viewer__inner" id="doc-viewer-inner">
+    <div class="doc-viewer__header">
+      <div>
+        <span class="doc-viewer__title" id="doc-viewer-title">자료 열람</span>
+        <span class="doc-viewer__title-meta" id="doc-viewer-meta"></span>
+      </div>
+      <button type="button" class="doc-viewer__close" id="doc-viewer-close" aria-label="닫기">×</button>
+    </div>
+    <div class="doc-viewer__main" id="doc-viewer-main"></div>
+    <div class="doc-viewer__list" id="doc-viewer-list"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCRIPTS — 라이트박스 동작 정의
+     - 모든 .thumbnail-frame, .project-showcase__hero, .capsule-card__art 클릭 시 확대
+     - 외부 영역 클릭 / X 버튼 클릭 / ESC 키 입력으로 닫기
+     - body 스크롤 잠금 토글
+     ============================================================ -->
+<script>
+(function () {
+  // 라이트박스 핵심 엘리먼트 캐시
+  var lightbox = document.getElementById("lightbox");
+  var lightboxInner = document.getElementById("lightbox-inner");
+  var lightboxMedia = document.getElementById("lightbox-media");
+  var lightboxCaption = document.getElementById("lightbox-caption");
+  var lightboxClose = document.getElementById("lightbox-close");
+
+  // 확대 대상으로 삼을 셀렉터들 — 썸네일/프로젝트 캡슐/더보기 카드 아트
+  var openableSelectors = [
+    ".thumbnail-frame",
+    ".project-showcase__hero",
+    ".capsule-card__art"
+  ];
+
+  // 라이트박스 열기 — 클릭된 요소의 내부 SVG/img를 복제해 표시
+  function openLightbox(sourceEl, captionText) {
+    // 기존 콘텐츠 비우기
+    lightboxMedia.innerHTML = "";
+    // 이전에 inner 에 인라인으로 부여됐던 aspect-ratio 초기화
+    lightboxInner.style.aspectRatio = "";
+
+    // 내부 시각 요소 (svg 또는 img) 첫 번째를 깊은 복제
+    var visual = sourceEl.querySelector("svg, img");
+    if (!visual) return;
+
+    var clone = visual.cloneNode(true);
+    var ratio = null; // 폭/높이 비율 (예: 16/9 = 1.7777)
+
+    // SVG 의 경우 width/height 고정 속성을 제거하고, viewBox 에서 비율 추출
+    if (clone.tagName.toLowerCase() === "svg") {
+      clone.removeAttribute("width");
+      clone.removeAttribute("height");
+      clone.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+      // viewBox 파싱 — "minX minY width height" 형식
+      var vb = clone.getAttribute("viewBox");
+      if (vb) {
+        var parts = vb.split(/\s+|,/).map(parseFloat);
+        if (parts.length === 4 && parts[3] > 0) {
+          ratio = parts[2] / parts[3];
+        }
+      }
+    } else if (clone.tagName.toLowerCase() === "img") {
+      // img 의 경우 naturalWidth / naturalHeight 사용
+      if (visual.naturalWidth && visual.naturalHeight) {
+        ratio = visual.naturalWidth / visual.naturalHeight;
+      }
+    }
+
+    // 추출한 비율을 컨테이너에 인라인 부여 — 비율 100% 고정
+    if (ratio && isFinite(ratio)) {
+      lightboxInner.style.aspectRatio = ratio + " / 1";
+    }
+
+    lightboxMedia.appendChild(clone);
+
+    // 캡션 — 전달된 텍스트 또는 비움
+    lightboxCaption.textContent = captionText || "";
+
+    // 표시 + 스크롤 잠금
+    lightbox.classList.add("is-open");
+    document.body.classList.add("is-lightbox-open");
+
+    // 닫기 버튼에 포커스 이동 (접근성)
+    lightboxClose.focus();
+  }
+
+  // 라이트박스 닫기
+  function closeLightbox() {
+    lightbox.classList.remove("is-open");
+    document.body.classList.remove("is-lightbox-open");
+    lightboxMedia.innerHTML = "";
+    lightboxCaption.textContent = "";
+    // 인라인 aspect-ratio 도 정리해 다음 열림에 영향 없도록
+    lightboxInner.style.aspectRatio = "";
+  }
+
+  // 1) 모든 확대 대상에 클릭/엔터 이벤트 바인딩
+  openableSelectors.forEach(function (selector) {
+    var elements = document.querySelectorAll(selector);
+    elements.forEach(function (el) {
+      // 캡션은 인접한 .capsule-card__title 또는 .subsection-label 등에서 추출 시도
+      function getCaption() {
+        // capsule-card 의 경우 형제 .capsule-card__body 에서 타이틀 + 부제 추출
+        if (el.classList.contains("capsule-card__art")) {
+          var card = el.closest(".capsule-card");
+          if (card) {
+            var t = card.querySelector(".capsule-card__title");
+            var s = card.querySelector(".capsule-card__subtitle");
+            return (t ? t.textContent : "") + (s ? " — " + s.textContent : "");
+          }
+        }
+        // project-showcase__hero 의 경우 같은 쇼케이스의 타이틀 추출
+        if (el.classList.contains("project-showcase__hero")) {
+          var showcase = el.closest(".project-showcase");
+          if (showcase) {
+            var pt = showcase.querySelector(".project-showcase__title");
+            return pt ? pt.textContent + " · 키비주얼" : "";
+          }
+        }
+        // 썸네일은 부모 쇼케이스 타이틀 + 인덱스
+        if (el.classList.contains("thumbnail-frame")) {
+          var sc = el.closest(".project-showcase");
+          var strip = el.parentElement;
+          var idx = Array.prototype.indexOf.call(strip.children, el) + 1;
+          var sct = sc ? sc.querySelector(".project-showcase__title") : null;
+          return (sct ? sct.textContent : "") + " · 스크린샷 " + idx;
+        }
+        return "";
+      }
+
+      // 클릭 핸들러
+      el.addEventListener("click", function () {
+        openLightbox(el, getCaption());
+      });
+
+      // 키보드 핸들러 (Enter/Space 로 열림)
+      el.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openLightbox(el, getCaption());
+        }
+      });
+    });
+  });
+
+  // 2) 닫기 버튼 클릭
+  lightboxClose.addEventListener("click", function (e) {
+    e.stopPropagation();
+    closeLightbox();
+  });
+
+  // 3) 오버레이 외부(이미지 박스 밖) 클릭 — .lightbox 자체 클릭 시 닫음
+  lightbox.addEventListener("click", function (e) {
+    if (e.target === lightbox) {
+      closeLightbox();
+    }
+  });
+
+  // 4) inner 박스 내부 클릭은 닫지 않도록 버블 차단
+  lightboxInner.addEventListener("click", function (e) {
+    e.stopPropagation();
+  });
+
+  // 5) ESC 키로 닫기
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && lightbox.classList.contains("is-open")) {
+      closeLightbox();
+    }
+  });
+})();
+
+/* ============================================================
+   PROJECT TABS — 프로젝트 탭 전환 + URL 해시 동기화
+   - 탭 클릭 시 해당 패널만 표시
+   - URL 해시(#ptd-detail / #dc-detail / #mouse-detail) 진입 시 자동 활성화
+   - 톱 헤더 "프로젝트 →" 링크(#projects) 진입 시는 기본 탭 유지
+   - 키보드 네비게이션: ←/→ 화살표로 탭 이동, Home/End 로 처음/끝
+   ============================================================ */
+(function () {
+  // 탭 컨테이너 — 페이지에 단일 인스턴스
+  var tabContainer = document.querySelector(".project-tabs");
+  if (!tabContainer) return;
+
+  var tabButtons = tabContainer.querySelectorAll(".project-tabs__button");
+  var allPanels = document.querySelectorAll(".project-panel");
+
+  // 유효한 패널 ID 목록 — 외부 해시 라우팅 시 검증용
+  var validPanelIds = Array.prototype.map.call(tabButtons, function (btn) {
+    return btn.getAttribute("data-target");
+  });
+
+  // 탭/패널 활성화 — 단일 진입점
+  function activatePanel(panelId, options) {
+    options = options || {};
+    var shouldScroll = options.scroll === true;
+    var shouldUpdateHash = options.updateHash !== false;
+    // shouldUpdateHash 의 기본값은 true — 명시적으로 false 줄 때만 해시 업데이트 안 함
+
+    // 유효성 검증 — 알 수 없는 ID 면 무시
+    if (validPanelIds.indexOf(panelId) === -1) return;
+
+    // 모든 탭 비활성화 후 타겟 탭만 활성화
+    tabButtons.forEach(function (btn) {
+      var isTarget = btn.getAttribute("data-target") === panelId;
+      btn.classList.toggle("is-active", isTarget);
+      btn.setAttribute("aria-selected", isTarget ? "true" : "false");
+      btn.setAttribute("tabindex", isTarget ? "0" : "-1");
+    });
+
+    // 모든 패널 숨김 후 타겟만 표시
+    allPanels.forEach(function (panel) {
+      panel.classList.toggle("is-active", panel.id === panelId);
+    });
+
+    // URL 해시 동기화 — 사용자가 직접 클릭한 경우만 history 업데이트
+    if (shouldUpdateHash && window.location.hash !== "#" + panelId) {
+      // pushState 대신 replaceState 사용 — 뒤로가기 히스토리 오염 방지
+      // (세 탭을 빠르게 전환했을 때 뒤로가기 3번을 강요하는 UX 회피)
+      if (history.replaceState) {
+        history.replaceState(null, "", "#" + panelId);
+      }
+    }
+
+    // 스크롤 처리 — 외부 링크에서 진입 시에만 탭 위치로 스크롤
+    if (shouldScroll) {
+      var anchor = document.getElementById("projects");
+      if (anchor) {
+        anchor.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  }
+
+  // 1) 탭 버튼 클릭 핸들러
+  tabButtons.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var panelId = btn.getAttribute("data-target");
+      activatePanel(panelId, { scroll: false, updateHash: true });
+    });
+
+    // 키보드 네비게이션 — 좌/우 화살표, Home/End
+    btn.addEventListener("keydown", function (e) {
+      var currentIndex = Array.prototype.indexOf.call(tabButtons, btn);
+      var nextIndex = -1;
+
+      if (e.key === "ArrowRight") {
+        nextIndex = (currentIndex + 1) % tabButtons.length;
+      } else if (e.key === "ArrowLeft") {
+        nextIndex = (currentIndex - 1 + tabButtons.length) % tabButtons.length;
+      } else if (e.key === "Home") {
+        nextIndex = 0;
+      } else if (e.key === "End") {
+        nextIndex = tabButtons.length - 1;
+      }
+
+      if (nextIndex !== -1) {
+        e.preventDefault();
+        var nextBtn = tabButtons[nextIndex];
+        var nextPanelId = nextBtn.getAttribute("data-target");
+        activatePanel(nextPanelId, { scroll: false, updateHash: true });
+        nextBtn.focus();
+      }
+    });
+  });
+
+  // 2) URL 해시 변경 감지 — 페이지 내 #ptd-detail 같은 링크 클릭에 반응
+  function handleHashChange() {
+    var hash = window.location.hash.replace("#", "");
+    if (validPanelIds.indexOf(hash) !== -1) {
+      // 외부 링크에서 들어온 경우는 스크롤도 함께
+      activatePanel(hash, { scroll: true, updateHash: false });
+    }
+  }
+  window.addEventListener("hashchange", handleHashChange);
+
+  // 3) 페이지 최초 로드 시 — 해시가 유효 패널이면 그쪽으로 활성화
+  // (해시 없거나 #projects/#about 같은 다른 해시면 기본값 PTD 유지)
+  var initialHash = window.location.hash.replace("#", "");
+  if (validPanelIds.indexOf(initialHash) !== -1) {
+    // 초기 로드는 스크롤 동작은 브라우저 기본에 맡기고, 탭만 동기화
+    activatePanel(initialHash, { scroll: false, updateHash: false });
+  }
+
+  // 4) 페이지 내 앵커 링크 클릭 보정 — 같은 패널 ID 로의 링크가 클릭됐을 때
+  // hashchange 이벤트가 발생하지 않는 경우(이미 같은 해시)에도 탭이 동기화되도록
+  document.addEventListener("click", function (e) {
+    var link = e.target.closest("a[href]");
+    if (!link) return;
+    var href = link.getAttribute("href");
+    if (!href || href.charAt(0) !== "#") return;
+
+    var targetId = href.replace("#", "");
+    if (validPanelIds.indexOf(targetId) !== -1) {
+      // 유효 패널 ID 로의 앵커 링크 — 탭 활성화 + 스크롤
+      activatePanel(targetId, { scroll: true, updateHash: true });
+    }
+  });
+})();
+
+/* ============================================================
+   DOC VIEWER — 자료 열람 오버레이 동작
+   - 3-버튼(기획서/영상/스크린샷) 클릭 시 해당 type 의 자료 목록을 표시
+   - 메인 영역에는 첫 번째 항목, 하단 목록에서 다른 항목 선택 가능
+   - 외부 클릭 / 닫기 버튼 / ESC 로 닫음
+   ============================================================ */
+(function () {
+  // 프로젝트별 자료 데이터 — 추후 URL 교체 시 이 한 곳만 수정하면 됨
+  // 빈 배열은 "아직 자료 없음" 을 의미 — 폴백 메시지가 표시됨
+  var projectAssets = {
+    ptd: {
+      docs: [
+        {
+          title: "PTD 컨셉 기획서",
+          // 추후 GitHub Pages URL 로 교체 — 예: "https://USER.github.io/REPO/PTD_concept.pdf"
+          url: ""
+        }
+      ],
+      videos: [
+        {
+          title: "PTD 게임플레이 (예정)",
+          // YouTube ID 만 입력 — 예: "dQw4w9WgXcQ"
+          youtubeId: ""
+        }
+      ],
+      shotsCount: 4
+      // shotsCount 는 페이지의 .thumbnail-strip[data-project] 에서 자동으로 끌어옴 (참고용)
+    },
+    dc: {
+      docs: [
+        { title: "전투 시스템 기획서", url: "" },
+        { title: "스킬 시스템 기획서", url: "" },
+        { title: "인게임 UI 기획서", url: "" },
+        { title: "데미지 계산식", url: "" }
+      ],
+      videos: [
+        { title: "Donut Crash 시연 (예정)", youtubeId: "" }
+      ],
+      shotsCount: 4
+    },
+    mouse: {
+      docs: [
+        { title: "기본 플레이 컨셉 기획서", url: "" },
+        { title: "UI 기획서", url: "" }
+      ],
+      videos: [
+        { title: "생쥐 대탈출 시연 (예정)", youtubeId: "" }
+      ],
+      shotsCount: 4
+    }
+  };
+
+  // viewer 핵심 엘리먼트 캐시
+  var viewer = document.getElementById("doc-viewer");
+  var viewerInner = document.getElementById("doc-viewer-inner");
+  var viewerTitle = document.getElementById("doc-viewer-title");
+  var viewerMeta = document.getElementById("doc-viewer-meta");
+  var viewerMain = document.getElementById("doc-viewer-main");
+  var viewerList = document.getElementById("doc-viewer-list");
+  var viewerClose = document.getElementById("doc-viewer-close");
+
+  if (!viewer) return;
+
+  // 타입별 표시 라벨 — 헤더 타이틀에 노출됨
+  var typeLabels = {
+    docs: "기획서 열람",
+    videos: "플레이 영상",
+    shots: "스크린샷"
+  };
+
+  // 현재 활성 컨텍스트 — 선택된 항목 인덱스 변경 시 메인 영역만 갱신하기 위함
+  var currentContext = {
+    project: null,
+    type: null,
+    items: [],
+    activeIndex: 0
+  };
+
+  // 메인 영역 콘텐츠 렌더 — type 별로 다른 마크업
+  function renderMain(item, type) {
+    viewerMain.innerHTML = "";
+    viewerMain.className = "doc-viewer__main";
+
+    // inner 박스의 PDF 모드 토글 — PDF 일 때만 박스를 풀 높이(90vh)로 강제
+    // 다른 모드(영상/이미지)에선 콘텐츠 높이만큼만 차지하도록 클래스 제거
+    if (type === "docs") {
+      viewerInner.classList.add("doc-viewer__inner--pdf");
+    } else {
+      viewerInner.classList.remove("doc-viewer__inner--pdf");
+    }
+
+    if (type === "docs") {
+      viewerMain.classList.add("doc-viewer__main--pdf");
+      if (item.url && item.url.length > 0) {
+        // 실제 PDF URL 이 있을 때 — iframe 으로 임베드
+        var iframe = document.createElement("iframe");
+        iframe.setAttribute("src", item.url);
+        iframe.setAttribute("title", item.title);
+        iframe.setAttribute("loading", "lazy");
+        viewerMain.appendChild(iframe);
+
+        // 모바일/임베드 폴백 — 새 창 열기 보조 링크는 헤더 메타에 표시
+        viewerMeta.innerHTML = '— <a href="' + item.url + '" target="_blank" rel="noopener noreferrer" style="color: var(--accent-cyan); text-decoration: none;">새 창에서 열기 ↗</a>';
+      } else {
+        // URL 미설정 placeholder — 안내 메시지
+        var fallback = document.createElement("div");
+        fallback.className = "doc-viewer__main-fallback";
+        fallback.innerHTML =
+          '<p style="margin-bottom: 12px;">PDF 파일이 아직 호스팅되지 않았습니다.</p>' +
+          '<p style="font-size: 12px;">GitHub Pages 등에 PDF 업로드 후<br>' +
+          '<code style="color: var(--accent-cyan); font-family: monospace;">projectAssets.' +
+          currentContext.project + '.docs[' + currentContext.activeIndex + '].url</code>' +
+          ' 에 URL을 입력하면 이곳에서 바로 열람 가능합니다.</p>';
+        viewerMain.appendChild(fallback);
+        viewerMeta.textContent = "";
+      }
+    } else if (type === "videos") {
+      viewerMain.classList.add("doc-viewer__main--video");
+      if (item.youtubeId && item.youtubeId.length > 0) {
+        // YouTube ID 가 있을 때 — embed iframe
+        var ytIframe = document.createElement("iframe");
+        ytIframe.setAttribute("src", "https://www.youtube.com/embed/" + item.youtubeId);
+        ytIframe.setAttribute("title", item.title);
+        ytIframe.setAttribute("allow", "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture");
+        ytIframe.setAttribute("allowfullscreen", "");
+        ytIframe.setAttribute("loading", "lazy");
+        viewerMain.appendChild(ytIframe);
+
+        viewerMeta.innerHTML = '— <a href="https://www.youtube.com/watch?v=' + item.youtubeId + '" target="_blank" rel="noopener noreferrer" style="color: var(--accent-cyan); text-decoration: none;">YouTube 에서 열기 ↗</a>';
+      } else {
+        var ytFallback = document.createElement("div");
+        ytFallback.className = "doc-viewer__main-fallback";
+        ytFallback.innerHTML =
+          '<p style="margin-bottom: 12px;">플레이 영상이 아직 등록되지 않았습니다.</p>' +
+          '<p style="font-size: 12px;">YouTube 영상 ID를<br>' +
+          '<code style="color: var(--accent-cyan); font-family: monospace;">projectAssets.' +
+          currentContext.project + '.videos[' + currentContext.activeIndex + '].youtubeId</code>' +
+          ' 에 입력하면 이곳에서 바로 재생됩니다.</p>';
+        viewerMain.appendChild(ytFallback);
+        viewerMeta.textContent = "";
+      }
+    } else if (type === "shots") {
+      viewerMain.classList.add("doc-viewer__main--image");
+      // 스크린샷은 item 자체가 DOM 노드(.thumbnail-frame) — 그 안 SVG 를 복제
+      var visual = item.element ? item.element.querySelector("svg, img") : null;
+      if (visual) {
+        var clone = visual.cloneNode(true);
+        if (clone.tagName.toLowerCase() === "svg") {
+          clone.removeAttribute("width");
+          clone.removeAttribute("height");
+          clone.setAttribute("preserveAspectRatio", "xMidYMid meet");
+        }
+        viewerMain.appendChild(clone);
+      }
+      viewerMeta.textContent = "";
+    }
+  }
+
+  // 하단 목록 렌더 — 모든 항목을 썸네일 버튼으로 나열
+  function renderList(items, type, activeIndex) {
+    viewerList.innerHTML = "";
+
+    items.forEach(function (item, idx) {
+      var listBtn = document.createElement("button");
+      listBtn.type = "button";
+      listBtn.className = "doc-viewer__list-item";
+      if (idx === activeIndex) {
+        listBtn.classList.add("is-active");
+      }
+
+      // 썸네일 영역
+      var thumb = document.createElement("div");
+      thumb.className = "doc-viewer__list-thumb";
+
+      if (type === "shots" && item.element) {
+        // 스크린샷은 SVG 작은 미리보기
+        var smallVisual = item.element.querySelector("svg, img");
+        if (smallVisual) {
+          thumb.appendChild(smallVisual.cloneNode(true));
+        }
+      } else if (type === "docs") {
+        // PDF 항목은 문서 아이콘
+        thumb.classList.add("doc-viewer__list-thumb--icon");
+        thumb.innerHTML =
+          '<svg viewBox="0 0 16 16" width="24" height="24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+          '<path d="M4 1.5h6.5L13 4v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1zm0 1v11h8V5h-2.5V2.5H4zm6.5 0v2H12L10.5 2.5z"/>' +
+          '</svg>';
+      } else if (type === "videos") {
+        // 영상 항목은 재생 아이콘
+        thumb.classList.add("doc-viewer__list-thumb--icon");
+        thumb.innerHTML =
+          '<svg viewBox="0 0 16 16" width="24" height="24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+          '<path d="M3 2.5h10a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zm3 2.5v6l5-3-5-3z"/>' +
+          '</svg>';
+      }
+
+      // 라벨 영역
+      var label = document.createElement("div");
+      label.className = "doc-viewer__list-label";
+      label.textContent = item.title || ("항목 " + (idx + 1));
+
+      listBtn.appendChild(thumb);
+      listBtn.appendChild(label);
+
+      // 클릭 시 메인 영역 교체
+      listBtn.addEventListener("click", function () {
+        currentContext.activeIndex = idx;
+        renderMain(item, type);
+        // 활성 클래스 갱신
+        var allBtns = viewerList.querySelectorAll(".doc-viewer__list-item");
+        allBtns.forEach(function (b, i) {
+          b.classList.toggle("is-active", i === idx);
+        });
+        // 인덱스 메타 갱신 (PDF/영상은 헤더에서 별도 처리 — 스크린샷은 인덱스만)
+        if (type === "shots") {
+          viewerMeta.textContent = "— " + (idx + 1) + " / " + items.length;
+        }
+      });
+
+      viewerList.appendChild(listBtn);
+    });
+  }
+
+  // viewer 열기 — project + type 조합으로 호출
+  function openViewer(projectKey, type) {
+    var asset = projectAssets[projectKey];
+    if (!asset) return;
+
+    var items = [];
+
+    if (type === "docs") {
+      items = asset.docs.map(function (d) {
+        return { title: d.title, url: d.url };
+      });
+    } else if (type === "videos") {
+      items = asset.videos.map(function (v) {
+        return { title: v.title, youtubeId: v.youtubeId };
+      });
+    } else if (type === "shots") {
+      // 스크린샷은 페이지에 숨겨진 .thumbnail-strip[data-project=KEY] 에서 DOM 노드 직접 가져옴
+      var strip = document.querySelector('.thumbnail-strip--data[data-project="' + projectKey + '"]');
+      if (strip) {
+        var frames = strip.querySelectorAll(".thumbnail-frame");
+        frames.forEach(function (frame) {
+          items.push({
+            title: frame.getAttribute("data-caption") || "",
+            element: frame
+          });
+        });
+      }
+    }
+
+    if (items.length === 0) return;
+
+    // 컨텍스트 저장
+    currentContext.project = projectKey;
+    currentContext.type = type;
+    currentContext.items = items;
+    currentContext.activeIndex = 0;
+
+    // 헤더 타이틀 갱신
+    viewerTitle.textContent = typeLabels[type] || "자료 열람";
+    if (type === "shots") {
+      viewerMeta.textContent = "— 1 / " + items.length;
+    } else {
+      viewerMeta.textContent = "";
+    }
+
+    // 메인 + 하단 목록 렌더
+    renderMain(items[0], type);
+    renderList(items, type, 0);
+
+    // 표시 + 스크롤 잠금
+    viewer.classList.add("is-open");
+    document.body.classList.add("is-doc-viewer-open");
+    viewerClose.focus();
+  }
+
+  // viewer 닫기 — 컨텍스트 초기화 + iframe 정리
+  function closeViewer() {
+    viewer.classList.remove("is-open");
+    document.body.classList.remove("is-doc-viewer-open");
+    // iframe 을 비워서 백그라운드 재생/로드 중단
+    viewerMain.innerHTML = "";
+    viewerList.innerHTML = "";
+    viewerMeta.textContent = "";
+    // PDF 모드 클래스도 정리 — 다음 열림 시 다른 모드라면 영향 없도록
+    viewerInner.classList.remove("doc-viewer__inner--pdf");
+    currentContext = { project: null, type: null, items: [], activeIndex: 0 };
+  }
+
+  // 1) 모든 .viewer-trigger 버튼에 클릭 핸들러 바인딩
+  var triggers = document.querySelectorAll(".viewer-trigger");
+  triggers.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var projectKey = btn.getAttribute("data-project");
+      var type = btn.getAttribute("data-viewer-type");
+      openViewer(projectKey, type);
+    });
+  });
+
+  // 2) 닫기 버튼
+  viewerClose.addEventListener("click", function (e) {
+    e.stopPropagation();
+    closeViewer();
+  });
+
+  // 3) 외부(.doc-viewer 자체) 클릭 시 닫기
+  viewer.addEventListener("click", function (e) {
+    if (e.target === viewer) {
+      closeViewer();
+    }
+  });
+
+  // 4) inner 박스 내부 클릭은 버블 차단
+  viewerInner.addEventListener("click", function (e) {
+    e.stopPropagation();
+  });
+
+  // 5) ESC 키로 닫기
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && viewer.classList.contains("is-open")) {
+      closeViewer();
+    }
+  });
+})();
+
+/* ============================================================
+   HERO CAROUSEL — 프로젝트 키비주얼 자동 순환
+   확장성 설계: 슬라이드를 HTML 에 직접 작성하지 않고, 페이지의 .project-panel 들에서
+   자동 복제해 생성. 새 프로젝트 패널 추가 시 캐러셀에 자동 반영됨.
+
+   동작:
+   1. 페이지 로드 시 모든 .project-panel 을 순회하며 각각의 .project-showcase__hero SVG 복제
+   2. 각 슬라이드에 data-target="패널ID" 부여 → 클릭 시 탭 시스템과 연동
+   3. 4초마다 좌→우 자동 슬라이드 (transform: translateX)
+   4. 호버 시 멈추지 않음 (사용자 결정)
+   5. 슬라이드 클릭 시 해당 프로젝트 탭 활성화 + URL 해시 업데이트 + 스크롤
+   ============================================================ */
+(function () {
+  // 캐러셀 핵심 엘리먼트 캐시
+  var carousel = document.getElementById("hero-carousel");
+  var track = document.getElementById("hero-carousel-track");
+  if (!carousel || !track) return;
+
+  // 페이지의 모든 프로젝트 패널을 순회 — 캐러셀 슬라이드의 데이터 소스
+  var panels = document.querySelectorAll(".project-panel");
+  if (panels.length === 0) return;
+
+  var slideCount = 0;
+
+  // 각 패널에서 캡슐 SVG 추출 → 슬라이드로 복제
+  panels.forEach(function (panel) {
+    var heroBox = panel.querySelector(".project-showcase__hero");
+    var visual = heroBox ? heroBox.querySelector("svg, img") : null;
+    if (!visual) return;
+
+    // 슬라이드 컨테이너 생성
+    var slide = document.createElement("div");
+    slide.className = "hero-carousel__slide";
+    slide.setAttribute("data-target", panel.id);
+    slide.setAttribute("role", "button");
+    slide.setAttribute("tabindex", "0");
+
+    // 패널 타이틀을 aria-label 로 — 접근성
+    var titleEl = panel.querySelector(".project-showcase__title");
+    if (titleEl) {
+      slide.setAttribute("aria-label", titleEl.textContent + " 프로젝트로 이동");
+    }
+
+    // SVG 깊은 복제 후 슬라이드에 추가
+    var clone = visual.cloneNode(true);
+    if (clone.tagName.toLowerCase() === "svg") {
+      // 캐러셀 안에서는 박스 가득 채우도록 width/height 제거하고 preserveAspectRatio 부여
+      clone.removeAttribute("width");
+      clone.removeAttribute("height");
+      clone.setAttribute("preserveAspectRatio", "xMidYMid slice");
+    }
+    slide.appendChild(clone);
+    track.appendChild(slide);
+    slideCount++;
+  });
+
+  // 슬라이드 0개면 캐러셀 동작 무의미 → 종료
+  if (slideCount === 0) return;
+
+  // 슬라이드가 1개뿐이면 자동 순환 의미 없음 → 첫 슬라이드만 표시하고 끝
+  if (slideCount === 1) {
+    // 단일 슬라이드라도 클릭 시 탭 이동은 작동하도록 핸들러는 등록
+    bindSlideClicks();
+    return;
+  }
+
+  // --- 자동 순환 로직 ---
+  var currentIndex = 0;
+  var SLIDE_DURATION_MS = 4000; // 4초 — Steam 표준
+
+  function goToSlide(index) {
+    // 인덱스 범위 보정 — 끝에서 처음으로 자연스럽게 순환
+    if (index < 0) index = slideCount - 1;
+    if (index >= slideCount) index = 0;
+    currentIndex = index;
+    track.style.transform = "translateX(-" + (currentIndex * 100) + "%)";
+  }
+
+  function nextSlide() {
+    goToSlide(currentIndex + 1);
+  }
+
+  // 4초 자동 순환 시작 — 호버 무시 (pause 로직 없음)
+  setInterval(nextSlide, SLIDE_DURATION_MS);
+
+  // --- 클릭 핸들러 ---
+  function bindSlideClicks() {
+    var slides = track.querySelectorAll(".hero-carousel__slide");
+    slides.forEach(function (slide) {
+      slide.addEventListener("click", function () {
+        var targetId = slide.getAttribute("data-target");
+        if (!targetId) return;
+
+        // 탭 시스템과 연동 — URL 해시 업데이트 + hashchange 이벤트가 탭 활성화 + 스크롤 처리
+        // 이 방식은 탭 IIFE 의 hashchange 핸들러와 페이지 내 앵커 클릭 핸들러를 모두 활용
+        if (window.location.hash === "#" + targetId) {
+          // 같은 해시면 hashchange 가 발생하지 않으므로 — 직접 스크롤만 수행
+          var anchor = document.getElementById("projects");
+          if (anchor) anchor.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          // 다른 해시 → location.hash 변경 → 탭 IIFE 의 hashchange 핸들러가 처리
+          window.location.hash = "#" + targetId;
+        }
+      });
+
+      // 키보드 접근성 — Enter/Space 로도 클릭 동작
+      slide.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          slide.click();
+        }
+      });
+    });
+  }
+
+  bindSlideClicks();
+})();
+
+/* ============================================================
+   SCROLL SPY — 스크롤 위치에 따라 헤더 nav 활성 링크 자동 갱신
+   - Intersection Observer 로 4개 섹션(#about / #projects / #more / #contact)을 관찰
+   - 화면 상단 근처에 있는 섹션의 nav link 에 .is-active 클래스 부여
+   - rootMargin 으로 sticky 헤더(120px) 만큼 관찰 영역 보정
+   - 사용자가 nav 링크를 직접 클릭한 경우 해당 링크의 활성도 자연스럽게 유지
+   ============================================================ */
+(function () {
+  // 헤더의 모든 nav 링크 — href 의 해시로 어떤 섹션을 가리키는지 식별
+  var navLinks = document.querySelectorAll(".top-header__nav-link");
+  if (navLinks.length === 0) return;
+
+  // 링크-섹션 매핑 — Map 으로 빠른 조회
+  // key: 섹션 ID (예: "about"), value: nav link 엘리먼트
+  var linkMap = {};
+  navLinks.forEach(function (link) {
+    var href = link.getAttribute("href");
+    if (href && href.charAt(0) === "#") {
+      var id = href.substring(1);
+      linkMap[id] = link;
+    }
+  });
+
+  // 관찰 대상 섹션들 — 매핑된 ID 만 골라 실제 DOM 요소 수집
+  var sections = [];
+  Object.keys(linkMap).forEach(function (id) {
+    var section = document.getElementById(id);
+    if (section) sections.push(section);
+  });
+
+  if (sections.length === 0) return;
+
+  // 모든 nav 링크에서 .is-active 제거 후 특정 ID 만 활성화
+  function setActiveLink(activeId) {
+    navLinks.forEach(function (link) {
+      link.classList.remove("is-active");
+    });
+    var activeLink = linkMap[activeId];
+    if (activeLink) activeLink.classList.add("is-active");
+  }
+
+  // Intersection Observer — 섹션 진입/이탈 감지
+  // 한 시점에 여러 섹션이 viewport 안에 있을 수 있으므로,
+  // "viewport 상단에 가장 가까운 섹션" 을 활성으로 결정
+  var visibleSections = new Set();
+
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        visibleSections.add(entry.target.id);
+      } else {
+        visibleSections.delete(entry.target.id);
+      }
+    });
+
+    // 보이는 섹션 중 sections 배열 순서상 가장 앞(=화면 위쪽)인 것 선택
+    var topMostId = null;
+    for (var i = 0; i < sections.length; i++) {
+      if (visibleSections.has(sections[i].id)) {
+        topMostId = sections[i].id;
+        break;
+      }
+    }
+
+    if (topMostId) {
+      setActiveLink(topMostId);
+    }
+  }, {
+    // rootMargin: 상단 -120px (sticky 헤더 가림 보정), 하단 -50% (화면 절반 이상 위쪽 영역만 관찰)
+    // → 섹션이 헤더 바로 아래로 내려와 화면 위쪽 절반에 들어왔을 때 활성으로 인지
+    rootMargin: "-120px 0px -50% 0px",
+    threshold: 0
+  });
+
+  // 관찰 시작
+  sections.forEach(function (section) {
+    observer.observe(section);
+  });
+})();
+</script>
+
+</body>
+</html>
