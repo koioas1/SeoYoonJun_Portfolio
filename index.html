@@ -780,6 +780,60 @@ ol {
   object-fit: cover;
 }
 
+/* ============================================================
+   PROJECT TITLE ROW — 제목/메타 좌측 + 다운로드 버튼 우측 정렬
+   .project-showcase__title 와 .project-showcase__meta 를 좌측 그룹으로 묶고
+   우측에 .project-showcase__download (옵션) 를 배치한다.
+   - 데스크톱: flex row, space-between, 우측 버튼은 상단 정렬
+   - 모바일(<=768px): flex column, 버튼이 메타 아래로 떨어짐
+   - 일부 프로젝트(예: 생쥐 대탈출)는 버튼을 두지 않으므로 컨테이너는
+     항상 존재하되 버튼 유무는 마크업 차원에서 결정한다.
+   ============================================================ */
+.project-showcase__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+/* 좌측 그룹 — 제목과 메타를 세로로 쌓는 컨테이너
+   기존 .project-showcase__title / __meta 의 margin 은 이 안에서 재정의 */
+.project-showcase__title-row__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 우측 다운로드 버튼 — .cta-button-primary 와 동일한 그린 그라데이션·라운딩
+   히어로의 '이력서 다운로드' 와 동일한 디자인을 재사용
+   flex-shrink: 0 로 좁아져도 줄어들지 않음 */
+.project-showcase__download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--gradient-cta);
+  color: var(--text-headline);
+  font-size: 15px;
+  font-weight: 400;
+  padding: 8px var(--space-md);
+  border-radius: var(--rounded-sm);
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+  transition: background 200ms ease;
+}
+
+.project-showcase__download:hover {
+  background: var(--gradient-cta-hover);
+  color: var(--text-headline);
+}
+
+.project-showcase__download:active {
+  background: var(--action-green);
+}
+
 .project-showcase__title {
   font-size: 22px;
   font-weight: 400;
@@ -792,6 +846,12 @@ ol {
   font-size: 14px;
   color: var(--text-primary);
   margin-bottom: var(--space-md);
+}
+
+/* title-row 안에서는 메타의 하단 margin 이 중복되므로 제거
+   (margin-bottom 은 .project-showcase__title-row 자체가 담당) */
+.project-showcase__title-row .project-showcase__meta {
+  margin-bottom: 0;
 }
 
 /* ============================================================
@@ -1183,7 +1243,7 @@ body.is-lightbox-open {
 
 /* ============================================================
    VIEWER TRIGGER ROW — 프로젝트 본문 안의 3-버튼 진입점
-   [기획서 열람] [플레이 영상] [스크린샷] 버튼이 가로로 배치
+   [기획서 및 관련문서] [플레이 영상] [스크린샷] 버튼이 가로로 배치
    각 버튼은 cyan secondary CTA 와 비슷한 톤 + 좌측 아이콘
    ============================================================ */
 .viewer-trigger-row {
@@ -1552,6 +1612,20 @@ body.is-doc-viewer-open {
     font-size: 28px;
   }
 
+  /* 프로젝트 타이틀 행 — 모바일에서는 세로 정렬
+     좁은 화면에서 버튼을 우측에 두면 제목이 너무 좁아지므로
+     제목/메타 아래로 버튼이 자연스럽게 떨어지도록 함 */
+  .project-showcase__title-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+  }
+
+  .project-showcase__download {
+    /* 모바일에서는 전체 폭을 채우는 풀와이드 버튼으로 — 터치 면적 확보 */
+    width: 100%;
+  }
+
   /* 4-up 그리드 → 2-up */
   .thumbnail-strip,
   .more-like-this-grid {
@@ -1689,9 +1763,10 @@ body.is-doc-viewer-open {
         System Design · 신입 · 2026
       </div>
 
-      <!-- 메인 CTA — 이력서 다운로드 (페이지 단일 그린 버튼) -->
+      <!-- 히어로 CTA — 이력서 다운로드 버튼은 제거되고
+           프로젝트별 '게임 다운로드' 버튼으로 이관됨
+           보조 링크(프로젝트 보기)는 유지 -->
       <div class="title-block__cta-row">
-        <a class="cta-button-primary" href="#contact">이력서 다운로드</a>
         <a class="cta-button-secondary" href="#projects">프로젝트 보기 →</a>
       </div>
 
@@ -2137,9 +2212,20 @@ body.is-doc-viewer-open {
           <img class="project-showcase__hero-img" src="" alt="PathTowerDefence · 키비주얼" data-image-key="ptd-hero" loading="lazy">
         </div>
 
-        <h3 class="project-showcase__title">PathTowerDefence</h3>
-        <div class="project-showcase__meta">
-          타워디펜스 · 전략게임 · PC · 1인개발 · 2025
+        <!-- 타이틀 행 — 좌측: 제목+메타, 우측: 게임 다운로드 버튼 (PTD = Google Drive) -->
+        <div class="project-showcase__title-row">
+          <div class="project-showcase__title-row__main">
+            <h3 class="project-showcase__title">PathTowerDefence</h3>
+            <div class="project-showcase__meta">
+              타워디펜스 · 전략게임 · PC · 1인개발 · 2025
+            </div>
+          </div>
+          <a class="project-showcase__download"
+             href="https://drive.google.com/drive/folders/1mQsUagU8rfkE4f0a8rDdEJbCynAmxJ9_?usp=drive_link"
+             target="_blank"
+             rel="noopener noreferrer">
+            게임 다운로드
+          </a>
         </div>
 
         <div class="description-block">
@@ -2169,7 +2255,7 @@ body.is-doc-viewer-open {
             <svg class="viewer-trigger__icon" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <path d="M4 1.5h6.5L13 4v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1zm0 1v11h8V5h-2.5V2.5H4zm6.5 0v2H12L10.5 2.5z"/>
             </svg>
-            기획서 열람
+            기획서 및 관련문서
           </button>
           <button type="button"
                   class="viewer-trigger viewer-trigger--videos"
@@ -2281,9 +2367,20 @@ body.is-doc-viewer-open {
           <img class="project-showcase__hero-img" src="" alt="Donut Crash · 키비주얼" data-image-key="dc-hero" loading="lazy">
         </div>
 
-        <h3 class="project-showcase__title">Donut Crash</h3>
-        <div class="project-showcase__meta">
-          턴제 배틀 게임 · Mobile · 팀 프로젝트 · 캐주얼 · 2025
+        <!-- 타이틀 행 — 좌측: 제목+메타, 우측: 게임 다운로드 버튼 (DC = Play Store) -->
+        <div class="project-showcase__title-row">
+          <div class="project-showcase__title-row__main">
+            <h3 class="project-showcase__title">Donut Crash</h3>
+            <div class="project-showcase__meta">
+              턴제 배틀 게임 · Mobile · 팀 프로젝트 · 캐주얼 · 2025
+            </div>
+          </div>
+          <a class="project-showcase__download"
+             href="https://play.google.com/store/apps/details?id=com.KRKIDS.DonutCrash&hl=ko"
+             target="_blank"
+             rel="noopener noreferrer">
+            게임 다운로드
+          </a>
         </div>
 
         <div class="description-block">
@@ -2315,7 +2412,7 @@ body.is-doc-viewer-open {
             <svg class="viewer-trigger__icon" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <path d="M4 1.5h6.5L13 4v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1zm0 1v11h8V5h-2.5V2.5H4zm6.5 0v2H12L10.5 2.5z"/>
             </svg>
-            기획서 열람
+            기획서 및 관련문서
           </button>
           <button type="button"
                   class="viewer-trigger viewer-trigger--videos"
@@ -2462,7 +2559,7 @@ body.is-doc-viewer-open {
             <svg class="viewer-trigger__icon" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <path d="M4 1.5h6.5L13 4v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1zm0 1v11h8V5h-2.5V2.5H4zm6.5 0v2H12L10.5 2.5z"/>
             </svg>
-            기획서 열람
+            기획서 및 관련문서
           </button>
           <button type="button"
                   class="viewer-trigger viewer-trigger--videos"
@@ -2972,7 +3069,6 @@ body.is-doc-viewer-open {
   var projectAssets = {
     ptd: {
       docs: [
-        
           {title: "PTD 컨셉 기획서", url: "https://koioas1.github.io/SeoYoonJun_Portfolio/pdf/PathTowerDefence컨셉기획서.pdf"},
 		  {title: "PTD 개발 보고서", url: "https://koioas1.github.io/SeoYoonJun_Portfolio/pdf/PTD_개발_보고서.pdf"}
       ],
@@ -3023,7 +3119,7 @@ body.is-doc-viewer-open {
 
   // 타입별 표시 라벨 — 헤더 타이틀에 노출됨
   var typeLabels = {
-    docs: "기획서 열람",
+    docs: "기획서 및 관련문서",
     videos: "플레이 영상",
     shots: "스크린샷"
   };
